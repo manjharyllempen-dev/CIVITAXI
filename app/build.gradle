@@ -1,0 +1,21 @@
+plugins { id 'com.android.application' }
+
+android {
+    namespace 'com.civitaxi.app'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.civitaxi.app'
+        minSdk 24
+        targetSdk 35
+        versionCode 1
+        versionName '0.1.0'
+    }
+
+    flavorDimensions 'perfil'
+    productFlavors {
+        usuario { dimension 'perfil'; applicationIdSuffix '.usuario'; resValue 'string', 'app_name', 'CiviTaxi Usuario' }
+        chofer { dimension 'perfil'; applicationIdSuffix '.chofer'; resValue 'string', 'app_name', 'CiviTaxi Chofer' }
+        admin { dimension 'perfil'; applicationIdSuffix '.admin'; resValue 'string', 'app_name', 'CiviTaxi Administrador' }
+    }
+}

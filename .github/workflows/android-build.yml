@@ -31,3 +31,5 @@ jobs:
         with:
           name: CiviTaxi-Administrador
           path: app/build/outputs/apk/admin/debug/*.apk
+
+# Trigger refreshed by ChatGPT on 2026-08-20.

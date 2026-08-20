@@ -1,7 +1,6 @@
 package com.civitaxi.app;
 
 import android.Manifest;
-import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
@@ -11,8 +10,16 @@ import android.webkit.WebChromeClient;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
-public class MainActivity extends Activity {
+import androidx.biometric.BiometricManager;
+import androidx.biometric.BiometricPrompt;
+import androidx.core.content.ContextCompat;
+import androidx.fragment.app.FragmentActivity;
+
+import java.util.concurrent.Executor;
+
+public class MainActivity extends FragmentActivity {
   private static final int LOCATION_REQUEST = 1001;
+  private WebView web;
 
   @Override public void onCreate(Bundle b) {
     super.onCreate(b);
@@ -20,7 +27,7 @@ public class MainActivity extends Activity {
       requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, LOCATION_REQUEST);
     }
 
-    WebView web = new WebView(this);
+    web = new WebView(this);
     web.setBackgroundColor(0xFFE6007E);
     web.getSettings().setJavaScriptEnabled(true);
     web.getSettings().setDomStorageEnabled(true);
@@ -38,12 +45,53 @@ public class MainActivity extends Activity {
     setContentView(web);
   }
 
+  private void biometricResult(boolean ok, String message) {
+    final String safe = message == null ? "" : message.replace("\\", "\\\\").replace("'", "\\'").replace("\n", " ");
+    runOnUiThread(() -> web.evaluateJavascript("window.onBiometricResult && window.onBiometricResult(" + ok + ", '" + safe + "')", null));
+  }
+
   public class Bridge {
     @JavascriptInterface public void share(String text) {
       Intent i = new Intent(Intent.ACTION_SEND);
       i.setType("text/plain");
       i.putExtra(Intent.EXTRA_TEXT, text);
       startActivity(Intent.createChooser(i, "Compartir viaje CiviTaxi"));
+    }
+
+    @JavascriptInterface public boolean biometricAvailable() {
+      BiometricManager manager = BiometricManager.from(MainActivity.this);
+      int result = manager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG | BiometricManager.Authenticators.BIOMETRIC_WEAK);
+      return result == BiometricManager.BIOMETRIC_SUCCESS;
+    }
+
+    @JavascriptInterface public void authenticateBiometric() {
+      runOnUiThread(() -> {
+        Executor executor = ContextCompat.getMainExecutor(MainActivity.this);
+        BiometricPrompt prompt = new BiometricPrompt(MainActivity.this, executor,
+          new BiometricPrompt.AuthenticationCallback() {
+            @Override public void onAuthenticationSucceeded(BiometricPrompt.AuthenticationResult result) {
+              super.onAuthenticationSucceeded(result);
+              biometricResult(true, "Identidad verificada");
+            }
+
+            @Override public void onAuthenticationError(int errorCode, CharSequence errString) {
+              super.onAuthenticationError(errorCode, errString);
+              biometricResult(false, errString == null ? "No se pudo verificar" : errString.toString());
+            }
+
+            @Override public void onAuthenticationFailed() {
+              super.onAuthenticationFailed();
+              biometricResult(false, "Huella o biometría no reconocida");
+            }
+          });
+
+        BiometricPrompt.PromptInfo info = new BiometricPrompt.PromptInfo.Builder()
+          .setTitle("CiviTaxi Administrador")
+          .setSubtitle("Verifica tu identidad para continuar")
+          .setNegativeButtonText("Usar correo y contraseña")
+          .build();
+        prompt.authenticate(info);
+      });
     }
   }
 }

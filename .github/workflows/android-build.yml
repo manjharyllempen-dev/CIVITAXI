@@ -19,17 +19,25 @@ jobs:
           gradle-version: '8.9'
       - name: Build three debug APKs
         run: gradle :app:assembleUsuarioDebug :app:assembleChoferDebug :app:assembleAdminDebug
+      - name: Prepare easy-to-share APK names
+        run: |
+          mkdir -p dist
+          cp app/build/outputs/apk/usuario/debug/*.apk dist/CiviTaxi-Usuario.apk
+          cp app/build/outputs/apk/chofer/debug/*.apk dist/CiviTaxi-Chofer.apk
+          cp app/build/outputs/apk/admin/debug/*.apk dist/CiviTaxi-Administrador.apk
       - uses: actions/upload-artifact@v4
         with:
           name: CiviTaxi-Usuario
-          path: app/build/outputs/apk/usuario/debug/*.apk
+          path: dist/CiviTaxi-Usuario.apk
       - uses: actions/upload-artifact@v4
         with:
           name: CiviTaxi-Chofer
-          path: app/build/outputs/apk/chofer/debug/*.apk
+          path: dist/CiviTaxi-Chofer.apk
       - uses: actions/upload-artifact@v4
         with:
           name: CiviTaxi-Administrador
-          path: app/build/outputs/apk/admin/debug/*.apk
-
-# Trigger refreshed by ChatGPT on 2026-08-20.
+          path: dist/CiviTaxi-Administrador.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CiviTaxi-APK-Pack
+          path: dist/*.apk

@@ -20,5 +20,5 @@ const Civi={
  async addLocation(tripId,lat,lng,heading=0,speedKmh=0){return this.json(SUPABASE_URL+'/rest/v1/trip_locations',{method:'POST',headers:{...this.headers(),'Prefer':'return=representation'},body:JSON.stringify({trip_id:tripId,actor_id:this.userId(),lat,lng,heading,speed_kmh:speedKmh})})},
  async createShareToken(tripId){return this.json(SUPABASE_URL+'/rest/v1/rpc/create_trip_share_token',{method:'POST',headers:this.headers(),body:JSON.stringify({p_trip_id:tripId})})},
  async drivers(query=''){return this.json(SUPABASE_URL+'/rest/v1/drivers?select=*&order=created_at.desc'+(query?'&'+query:''),{headers:this.headers()})},
- async patchDriver(id,data){return this.json(SUPABASE_URL+'/rest/v1/drivers?id=eq.'+encodeURIComponent(id),{method:'PATCH',headers:{...this.headers(),'Prefer':'return=representation'},body:JSON.stringify(data)})}
+ async patchDriver(id,data){if(data&&data.status)return this.json(SUPABASE_URL+'/rest/v1/rpc/admin_set_driver_status',{method:'POST',headers:this.headers(),body:JSON.stringify({p_driver_id:id,p_status:data.status})});throw new Error('Operación de administrador no permitida')}
 };

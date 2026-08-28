@@ -4,7 +4,11 @@ const Civi={
  token:()=>localStorage.getItem('sb_token'),
  headers(auth=true){const h={'Content-Type':'application/json','apikey':SUPABASE_KEY};if(auth&&this.token())h.Authorization='Bearer '+this.token();return h},
  async json(url,opts={}){const r=await fetch(url,opts);let j=null;try{j=await r.json()}catch(e){j=null}if(!r.ok)throw new Error((j&&(j.msg||j.message||j.error_description||j.hint))||('HTTP '+r.status));return j},
- async signUp(email,password,fullName,role='usuario'){return this.json(SUPABASE_URL+'/auth/v1/signup',{method:'POST',headers:this.headers(false),body:JSON.stringify({email,password,data:{full_name:fullName,role}})})},
+ async signUp(email,password,fullName,role='usuario'){
+   const h=this.headers(false);if(this.token())h.Authorization='Bearer '+this.token();
+   await this.json(SUPABASE_URL+'/functions/v1/register-account',{method:'POST',headers:h,body:JSON.stringify({email,password,full_name:fullName,role})});
+   return this.signIn(email,password)
+ },
  async signIn(email,password){const j=await this.json(SUPABASE_URL+'/auth/v1/token?grant_type=password',{method:'POST',headers:this.headers(false),body:JSON.stringify({email,password})});if(j.access_token){localStorage.setItem('sb_token',j.access_token);if(j.refresh_token)localStorage.setItem('sb_refresh',j.refresh_token)}return j},
  signOut(){localStorage.removeItem('sb_token');localStorage.removeItem('sb_refresh')},
  userId(){try{return JSON.parse(atob((this.token()||'..').split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).sub||''}catch(e){return''}},

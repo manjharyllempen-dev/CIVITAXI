@@ -3,10 +3,12 @@ package com.civitaxi.app;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Bundle;
 import android.webkit.GeolocationPermissions;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebChromeClient;
+import android.webkit.WebResourceRequest;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
@@ -32,7 +34,20 @@ public class MainActivity extends FragmentActivity {
     web.getSettings().setJavaScriptEnabled(true);
     web.getSettings().setDomStorageEnabled(true);
     web.getSettings().setGeolocationEnabled(true);
-    web.setWebViewClient(new WebViewClient());
+    web.setWebViewClient(new WebViewClient() {
+      @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+        Uri uri = request.getUrl();
+        String url = uri == null ? "" : uri.toString();
+        if (url.startsWith("file:///android_asset/")) return false;
+        String scheme = uri == null ? "" : uri.getScheme();
+        if ("https".equalsIgnoreCase(scheme) || "http".equalsIgnoreCase(scheme)) {
+          try {
+            startActivity(new Intent(Intent.ACTION_VIEW, uri));
+          } catch (Exception ignored) { }
+        }
+        return true;
+      }
+    });
     web.setWebChromeClient(new WebChromeClient() {
       @Override public void onGeolocationPermissionsShowPrompt(String origin, GeolocationPermissions.Callback callback) {
         boolean granted = checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
@@ -46,16 +61,26 @@ public class MainActivity extends FragmentActivity {
   }
 
   private void biometricResult(boolean ok, String message) {
-    final String safe = message == null ? "" : message.replace("\\", "\\\\").replace("'", "\\'").replace("\n", " ");
+    final String safe = message == null ? "" : message.replace("\\", "\\\\").replace("'", "\\'").replace("\n", " ").replace("\r", " ");
     runOnUiThread(() -> web.evaluateJavascript("window.onBiometricResult && window.onBiometricResult(" + ok + ", '" + safe + "')", null));
+  }
+
+  @Override protected void onDestroy() {
+    if (web != null) {
+      web.removeJavascriptInterface("Android");
+      web.destroy();
+    }
+    super.onDestroy();
   }
 
   public class Bridge {
     @JavascriptInterface public void share(String text) {
-      Intent i = new Intent(Intent.ACTION_SEND);
-      i.setType("text/plain");
-      i.putExtra(Intent.EXTRA_TEXT, text);
-      startActivity(Intent.createChooser(i, "Compartir viaje CiviTaxi"));
+      runOnUiThread(() -> {
+        Intent i = new Intent(Intent.ACTION_SEND);
+        i.setType("text/plain");
+        i.putExtra(Intent.EXTRA_TEXT, text == null ? "" : text);
+        startActivity(Intent.createChooser(i, "Compartir viaje CiviTaxi"));
+      });
     }
 
     @JavascriptInterface public boolean biometricAvailable() {

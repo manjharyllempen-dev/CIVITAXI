@@ -30,7 +30,7 @@ public class MainActivity extends FragmentActivity {
     }
 
     web = new WebView(this);
-    web.setBackgroundColor(0xFFE6007E);
+    web.setBackgroundColor(0xFF05020A);
     web.getSettings().setJavaScriptEnabled(true);
     web.getSettings().setDomStorageEnabled(true);
     web.getSettings().setGeolocationEnabled(true);

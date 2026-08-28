@@ -12,6 +12,7 @@ const Civi={
  signOut(){localStorage.removeItem('sb_token');localStorage.removeItem('sb_refresh')},
  userId(){try{const p=(this.token()||'..').split('.')[1]||'';return JSON.parse(atob(p.replace(/-/g,'+').replace(/_/g,'/'))).sub||''}catch(e){return''}},
  async profile(){return this.json(SUPABASE_URL+'/rest/v1/profiles?id=eq.'+encodeURIComponent(this.userId())+'&select=*',{headers:this.headers()})},
+ async profiles(query=''){return this.json(SUPABASE_URL+'/rest/v1/profiles?select=id,role,full_name,phone,email,created_at&order=created_at.desc'+(query?'&'+query:''),{headers:this.headers()})},
  async trips(query=''){return this.json(SUPABASE_URL+'/rest/v1/trips?select=*&order=requested_at.desc'+(query?'&'+query:''),{headers:this.headers()})},
  async activePassengerTrip(){return this.trips('passenger_id=eq.'+encodeURIComponent(this.userId())+'&status=in.(solicitado,aceptado,chofer_en_camino,chofer_llego,en_viaje)&limit=1')},
  async activeDriverTrip(){return this.trips('driver_id=eq.'+encodeURIComponent(this.userId())+'&status=in.(aceptado,chofer_en_camino,chofer_llego,en_viaje)&limit=1')},
@@ -25,5 +26,7 @@ const Civi={
  async addLocation(tripId,lat,lng,heading=0,speedKmh=0){return this.json(SUPABASE_URL+'/rest/v1/trip_locations',{method:'POST',headers:{...this.headers(),'Prefer':'return=representation'},body:JSON.stringify({trip_id:tripId,actor_id:this.userId(),lat,lng,heading,speed_kmh:speedKmh})})},
  async createShareToken(tripId){return this.json(SUPABASE_URL+'/rest/v1/rpc/create_trip_share_token',{method:'POST',headers:this.headers(),body:JSON.stringify({p_trip_id:tripId})})},
  async drivers(query=''){return this.json(SUPABASE_URL+'/rest/v1/drivers?select=*&order=created_at.desc'+(query?'&'+query:''),{headers:this.headers()})},
+ async incidents(query=''){return this.json(SUPABASE_URL+'/rest/v1/incidents?select=*&order=created_at.desc'+(query?'&'+query:''),{headers:this.headers()})},
+ async fares(query=''){return this.json(SUPABASE_URL+'/rest/v1/fares?select=*&order=created_at.desc'+(query?'&'+query:''),{headers:this.headers()})},
  async patchDriver(id,data){if(data&&data.status)return this.json(SUPABASE_URL+'/rest/v1/rpc/admin_set_driver_status',{method:'POST',headers:this.headers(),body:JSON.stringify({p_driver_id:id,p_status:data.status})});throw new Error('Operación de administrador no permitida')}
 };

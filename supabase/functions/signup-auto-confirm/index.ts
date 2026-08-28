@@ -8,7 +8,6 @@ const cors = {
   "Content-Type": "application/json; charset=utf-8",
 };
 
-const BOOTSTRAP_ADMIN = "civitaxi2024@gmail.com";
 const allowedRoles = new Set(["usuario", "chofer", "admin"]);
 
 function json(status: number, payload: unknown) {
@@ -30,15 +29,25 @@ Deno.serve(async (req) => {
     if (password.length < 8) return json(400, { error: "La contraseña debe tener al menos 8 caracteres" });
     if (!fullName) return json(400, { error: "Ingresa tu nombre completo" });
     if (!allowedRoles.has(requestedRole)) return json(400, { error: "Tipo de cuenta inválido" });
-    if (requestedRole === "admin" && email !== BOOTSTRAP_ADMIN) {
-      return json(403, { error: "Este correo no está autorizado para crear la cuenta administradora" });
-    }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const admin = createClient(supabaseUrl, serviceKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
+
+    if (requestedRole === "admin") {
+      const { data: admins, error: adminLookupError } = await admin
+        .from("profiles")
+        .select("id,email")
+        .eq("role", "admin")
+        .limit(1);
+      if (adminLookupError) return json(500, { error: "No se pudo verificar la cuenta administradora" });
+      const existingAdmin = admins?.[0];
+      if (existingAdmin && String(existingAdmin.email || "").toLowerCase() !== email) {
+        return json(409, { error: "Ya existe una cuenta administradora. Inicia sesión con el correo administrador registrado." });
+      }
+    }
 
     const { data, error } = await admin.auth.admin.createUser({
       email,
@@ -48,6 +57,16 @@ Deno.serve(async (req) => {
     });
 
     if (!error && data.user) {
+      if (requestedRole === "admin") {
+        const { error: promoteError } = await admin
+          .from("profiles")
+          .update({ role: "admin" })
+          .eq("id", data.user.id);
+        if (promoteError) {
+          await admin.auth.admin.deleteUser(data.user.id).catch(() => undefined);
+          return json(500, { error: "No se pudo activar el perfil administrador" });
+        }
+      }
       return json(200, { ok: true, user_id: data.user.id, existing: false });
     }
 

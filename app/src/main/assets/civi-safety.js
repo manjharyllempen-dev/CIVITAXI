@@ -1,7 +1,7 @@
 (()=>{
   'use strict';
-  const isPassenger=/CiviTaxi Usuario/i.test(document.title);
-  const isDriver=/CiviTaxi Chofer/i.test(document.title);
+  const isPassenger=/Nova Taxi Usuario/i.test(document.title);
+  const isDriver=/Nova Taxi Chofer/i.test(document.title);
   if(!isPassenger&&!isDriver)return;
 
   const $=id=>document.getElementById(id);
@@ -35,7 +35,7 @@
     modal.id='civiSafetyModal';
     modal.className='civi-safety-backdrop';
     modal.innerHTML=`<div class="civi-safety-card">
-      <h2>🆘 Seguridad CiviTaxi</h2>
+      <h2>🆘 Seguridad Nova Taxi</h2>
       <p>Si ocurre una situación de riesgo durante el viaje, puedes registrar el incidente y compartir tu ubicación actual con una persona de confianza.</p>
       <button class="btn civi-sos" id="civiReportEmergency">REGISTRAR INCIDENTE URGENTE</button>
       <button class="btn" id="civiShareEmergency">📤 COMPARTIR UBICACIÓN Y VIAJE</button>
@@ -87,7 +87,7 @@
         headers:{...Civi.headers(),'Prefer':'return=representation'},
         body:JSON.stringify({trip_id:trip.id,reporter_id:Civi.userId(),category:'emergencia',description,status:'abierto',priority:'alta'})
       });
-      safetyMessage('✅ Incidente registrado. El administrador podrá verlo en CiviTaxi Administrador.');
+      safetyMessage('✅ Incidente registrado. El administrador podrá verlo en Nova Taxi Administrador.');
       try{if(window.Android&&Android.tripAlert)Android.tripAlert()}catch(_e){}
     }catch(e){
       safetyMessage('No se pudo registrar el incidente: '+String(e&&e.message||e));
@@ -109,14 +109,14 @@
         if(token)live=SUPABASE_URL+'/functions/v1/share-trip?token='+token;
       }catch(_e){}
       const lines=[
-        '🆘 CiviTaxi · Mensaje de seguridad',
-        'Estoy en un viaje de CiviTaxi y comparto estos datos por seguridad.',
+        '🆘 Nova Taxi · Mensaje de seguridad',
+        'Estoy en un viaje de Nova Taxi y comparto estos datos por seguridad.',
         '📍 Origen: '+String(trip.origin_address||'—'),
         '🏁 Destino: '+String(trip.destination_address||'—')
       ];
       if(loc)lines.push('📌 Mi ubicación actual: '+loc.url);
       if(live)lines.push('📡 Seguimiento del viaje: '+live);
-      lines.push('Enviado desde CiviTaxi '+roleLabel()+'.');
+      lines.push('Enviado desde Nova Taxi '+roleLabel()+'.');
       nativeShare(lines.join('\n\n'));
       safetyMessage('Abriendo las opciones para compartir. Puedes elegir WhatsApp.');
     }catch(e){

@@ -5,6 +5,7 @@
   const emailOk=v=>/^\S+@\S+\.\S+$/.test(String(v||'').trim());
   const accountExists=e=>/ya est[aá] registr|already|account_exists|contrase(?:ñ|n)a original|otro correo/i.test(String(e&&e.message||e||''));
   const roleName=()=>/Chofer/i.test(document.title)?'Chofer':/Administrador/i.test(document.title)?'Administrador':'Usuario';
+  const logoFile=()=>roleName()==='Chofer'?'nova-taxi-black.png':'nova-taxi-white.png';
 
   function installBranding(){
     if($('#civi-brand-style'))return;

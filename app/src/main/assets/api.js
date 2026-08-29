@@ -28,5 +28,7 @@ const Civi={
  async drivers(query=''){return this.json(SUPABASE_URL+'/rest/v1/drivers?select=*&order=created_at.desc'+(query?'&'+query:''),{headers:this.headers()})},
  async incidents(query=''){return this.json(SUPABASE_URL+'/rest/v1/incidents?select=*&order=created_at.desc'+(query?'&'+query:''),{headers:this.headers()})},
  async fares(query=''){return this.json(SUPABASE_URL+'/rest/v1/fares?select=*&order=created_at.desc'+(query?'&'+query:''),{headers:this.headers()})},
+ async createFare(data){return this.json(SUPABASE_URL+'/rest/v1/fares',{method:'POST',headers:{...this.headers(),'Prefer':'return=representation'},body:JSON.stringify({name:data.name,base_fare:Number(data.base_fare||0),per_km:Number(data.per_km||0),per_minute:Number(data.per_minute||0),minimum_fare:Number(data.minimum_fare||0),platform_commission_percent:0,active:data.active!==false})})},
+ async deleteFare(id){return this.json(SUPABASE_URL+'/rest/v1/fares?id=eq.'+encodeURIComponent(id),{method:'DELETE',headers:{...this.headers(),'Prefer':'return=representation'}})},
  async patchDriver(id,data){if(data&&data.status)return this.json(SUPABASE_URL+'/rest/v1/rpc/admin_set_driver_status',{method:'POST',headers:this.headers(),body:JSON.stringify({p_driver_id:id,p_status:data.status})});throw new Error('Operación de administrador no permitida')}
 };

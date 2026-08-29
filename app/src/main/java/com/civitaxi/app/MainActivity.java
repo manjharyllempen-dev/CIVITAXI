@@ -41,7 +41,7 @@ public class MainActivity extends FragmentActivity {
   private static final int LOCATION_REQUEST = 1001;
   private static final int FILE_CHOOSER_REQUEST = 1002;
   private static final int NOTIFICATION_REQUEST = 1003;
-  private static final String TRIP_CHANNEL_ID = "civitaxi_trip_status";
+  private static final String TRIP_CHANNEL_ID = "novataxi_trip_status";
   private WebView web;
   private ValueCallback<Uri[]> filePathCallback;
 
@@ -72,7 +72,7 @@ public class MainActivity extends FragmentActivity {
       @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
         Uri uri = request.getUrl();
         String url = uri == null ? "" : uri.toString();
-        if (url.startsWith("file:///android_asset/")) return false;
+        if (url.startsWith("https://nova-taxi.manjharyllempen.chatgpt.site")) return false;
         String scheme = uri == null ? "" : uri.getScheme();
         if (("https".equalsIgnoreCase(scheme) || "http".equalsIgnoreCase(scheme)) && request.isForMainFrame()) {
           try { startActivity(new Intent(Intent.ACTION_VIEW, uri)); } catch (Exception ignored) { }
@@ -100,7 +100,7 @@ public class MainActivity extends FragmentActivity {
         try {
           Intent intent = params.createIntent();
           intent.addCategory(Intent.CATEGORY_OPENABLE);
-          startActivityForResult(Intent.createChooser(intent, "Seleccionar archivo CiviTaxi"), FILE_CHOOSER_REQUEST);
+          startActivityForResult(Intent.createChooser(intent, "Seleccionar archivo Nova Taxi"), FILE_CHOOSER_REQUEST);
           return true;
         } catch (Exception e) {
           filePathCallback = null;
@@ -109,7 +109,7 @@ public class MainActivity extends FragmentActivity {
       }
     });
     web.addJavascriptInterface(new Bridge(), "Android");
-    web.loadUrl("file:///android_asset/index.html");
+    web.loadUrl(BuildConfig.APP_URL);
     setContentView(web);
   }
 
@@ -157,7 +157,7 @@ public class MainActivity extends FragmentActivity {
         ? new Notification.Builder(this, TRIP_CHANNEL_ID)
         : new Notification.Builder(this);
       builder.setSmallIcon(android.R.drawable.ic_dialog_info)
-        .setContentTitle(title == null || title.trim().isEmpty() ? "CiviTaxi" : title)
+        .setContentTitle(title == null || title.trim().isEmpty() ? "Nova Taxi" : title)
         .setContentText(message == null ? "" : message)
         .setAutoCancel(true)
         .setPriority(Notification.PRIORITY_HIGH)
@@ -194,7 +194,7 @@ public class MainActivity extends FragmentActivity {
     runOnUiThread(() -> {
       if (!hasLocationPermission()) {
         requestLocationPermissionIfNeeded();
-        nativeLocationResult(false, null, "Autoriza la ubicación de CiviTaxi y vuelve a intentarlo.");
+        nativeLocationResult(false, null, "Autoriza la ubicación de Nova Taxi y vuelve a intentarlo.");
         return;
       }
       LocationManager lm = (LocationManager) getSystemService(LOCATION_SERVICE);
@@ -291,7 +291,7 @@ public class MainActivity extends FragmentActivity {
         Intent i = new Intent(Intent.ACTION_SEND);
         i.setType("text/plain");
         i.putExtra(Intent.EXTRA_TEXT, text == null ? "" : text);
-        startActivity(Intent.createChooser(i, "Compartir CiviTaxi"));
+        startActivity(Intent.createChooser(i, "Compartir Nova Taxi"));
       });
     }
 
@@ -352,7 +352,7 @@ public class MainActivity extends FragmentActivity {
             }
           });
         BiometricPrompt.PromptInfo info = new BiometricPrompt.PromptInfo.Builder()
-          .setTitle("CiviTaxi Administrador")
+          .setTitle("Nova Taxi Administrador")
           .setSubtitle("Verifica tu identidad para continuar")
           .setNegativeButtonText("Usar correo y contraseña")
           .build();

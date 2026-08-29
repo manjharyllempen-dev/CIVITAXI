@@ -27,6 +27,8 @@ jobs:
           cp app/build/outputs/apk/usuario/debug/*.apk dist/CiviTaxi-Usuario.apk
           cp app/build/outputs/apk/chofer/debug/*.apk dist/CiviTaxi-Chofer.apk
           cp app/build/outputs/apk/admin/debug/*.apk dist/CiviTaxi-Administrador.apk
+          cd dist
+          sha256sum CiviTaxi-Usuario.apk CiviTaxi-Chofer.apk CiviTaxi-Administrador.apk > SHA256SUMS.txt
       - uses: actions/upload-artifact@v4
         with:
           name: CiviTaxi-Usuario
@@ -42,4 +44,6 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: CiviTaxi-APK-Pack
-          path: dist/*.apk
+          path: |
+            dist/*.apk
+            dist/SHA256SUMS.txt

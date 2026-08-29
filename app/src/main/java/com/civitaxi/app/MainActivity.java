@@ -84,7 +84,7 @@ public class MainActivity extends FragmentActivity {
       @Override public void onPageFinished(WebView view, String url) {
         super.onPageFinished(view, url);
         if (url != null && url.startsWith("file:///android_asset/")) {
-          view.evaluateJavascript("(function(){if(document.getElementById('civi-patches-loader'))return;var s=document.createElement('script');s.id='civi-patches-loader';s.src='civi-patches.js?v=4';document.body.appendChild(s);})();", null);
+          view.evaluateJavascript("(function(){if(document.getElementById('civi-patches-loader'))return;var s=document.createElement('script');s.id='civi-patches-loader';s.src='civi-patches.js?v=5';document.body.appendChild(s);})();", null);
         }
       }
     });

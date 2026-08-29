@@ -38,6 +38,7 @@ const CiviMap=(()=>{
 
   function valid(p){return p&&Number.isFinite(Number(p.lat))&&Number.isFinite(Number(p.lng))}
   function label(text){return String(text||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+  function letterIcon(letter,color){return L.divIcon({className:'nova-point-marker',html:'<div style="width:38px;height:38px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:grid;place-items:center;background:'+color+';color:#fff;border:3px solid #fff;box-shadow:0 4px 12px #0008"><b style="transform:rotate(45deg);font-size:18px">'+letter+'</b></div>',iconSize:[42,42],iconAnchor:[20,39],popupAnchor:[0,-38]})}
 
   function point(id,p,text='Ubicación',zoom=16){
     if(!valid(p))return null;
@@ -51,8 +52,8 @@ const CiviMap=(()=>{
     if(!valid(origin)||!valid(destination))return null;
     const o=[Number(origin.lat),Number(origin.lng)],d=[Number(destination.lat),Number(destination.lng)],map=ensure(id,o,13);if(!map)return null;
     const g=group(id,map);
-    L.marker(o).addTo(g).bindPopup(label(originLabel));
-    L.marker(d).addTo(g).bindPopup(label(destinationLabel));
+    L.marker(o,{icon:letterIcon('A','#7b2cff')}).addTo(g).bindPopup('<b>Punto A · Origen</b><br>'+label(originLabel));
+    L.marker(d,{icon:letterIcon('B','#e6007e')}).addTo(g).bindPopup('<b>Punto B · Destino</b><br>'+label(destinationLabel));
     try{
       const url='https://router.project-osrm.org/route/v1/driving/'+origin.lng+','+origin.lat+';'+destination.lng+','+destination.lat+'?overview=full&geometries=geojson';
       const r=await fetch(url);if(!r.ok)throw new Error('route');

@@ -110,6 +110,8 @@
     if($('completeDni'))$('completeDni').value=String($('dni')?.value||'');
     if($('completeLicense'))$('completeLicense').value=String($('license')?.value||'');
     if($('completePlate'))$('completePlate').value=String($('plate')?.value||'');
+    if($('completeVehicleBrand'))$('completeVehicleBrand').value=String($('vehicleBrand')?.value||'');
+    if($('completeVehicleColor'))$('completeVehicleColor').value=String($('vehicleColor')?.value||'');
   }
 
   function installDriverRegistration(){
@@ -123,12 +125,14 @@
       const doc=String($('dni')?.value||'').replace(/\D/g,'');
       const lic=String($('license')?.value||'').trim();
       const plateValue=String($('plate')?.value||'').trim().toUpperCase();
+      const brandValue=String($('vehicleBrand')?.value||'').trim();
+      const colorValue=String($('vehicleColor')?.value||'').trim();
       const files=['profilePhoto','licensePhoto','vehiclePhoto','soatPhoto'].map(id=>$(id)?.files?.[0]||null);
       try{
         if(!full)throw new Error('Ingresa tu nombre completo.');
         if(ph.replace(/\D/g,'').length<9)throw new Error('Ingresa un número de celular válido.');
         if(doc.length!==8)throw new Error('El DNI debe tener exactamente 8 dígitos.');
-        if(!lic||!plateValue)throw new Error('Completa licencia y placa.');
+        if(!lic||!plateValue||!brandValue||!colorValue)throw new Error('Completa licencia, placa, marca y color.');
         if(!emailOk(mail))throw new Error('Ingresa un correo válido.');
         if(password.length<8)throw new Error('La contraseña debe tener al menos 8 caracteres.');
         if(files.some(f=>!f))throw new Error('Adjunta foto de tu cara, licencia, vehículo y SOAT antes de enviar.');
@@ -138,11 +142,12 @@
         await Civi.signUp(mail,password,full,'chofer');
         await Civi.updateProfile({phone:ph});
         await Civi.ensureDriver(doc,lic);
+        await Civi.ensureVehicle(plateValue,'',brandValue,colorValue);
         try{
           setMsg('regMsg','Cuenta creada. Subiendo foto y documentos...');
           const vehicleUrl=await uploadDriverMediaFixed('');
           setMsg('regMsg','Documentos cargados. Guardando vehículo...');
-          await Civi.ensureVehicle(plateValue,vehicleUrl);
+          if(vehicleUrl)await Civi.ensureVehicle(plateValue,vehicleUrl,brandValue,colorValue);
         }catch(uploadError){
           prefillDriverComplete();
           if(typeof go==='function')go('complete');

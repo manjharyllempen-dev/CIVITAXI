@@ -19,16 +19,17 @@ const Civi={
  async createTrip(data){return this.json(SUPABASE_URL+'/rest/v1/trips',{method:'POST',headers:{...this.headers(),'Prefer':'return=representation'},body:JSON.stringify({...data,passenger_id:this.userId(),status:'solicitado'})})},
  async patchTrip(id,data,extra=''){return this.json(SUPABASE_URL+'/rest/v1/trips?id=eq.'+encodeURIComponent(id)+(extra?'&'+extra:''),{method:'PATCH',headers:{...this.headers(),'Prefer':'return=representation'},body:JSON.stringify(data)})},
  async ensureDriver(documentNumber,licenseNumber){return this.json(SUPABASE_URL+'/rest/v1/drivers',{method:'POST',headers:{...this.headers(),'Prefer':'resolution=merge-duplicates,return=representation'},body:JSON.stringify({id:this.userId(),document_number:documentNumber,license_number:licenseNumber,status:'pendiente',is_available:false})})},
- async available(v){return this.json(SUPABASE_URL+'/rest/v1/drivers?id=eq.'+encodeURIComponent(this.userId()),{method:'PATCH',headers:{...this.headers(),'Prefer':'return=representation'},body:JSON.stringify({is_available:v})})},
- async driverRecord(){return this.json(SUPABASE_URL+'/rest/v1/drivers?id=eq.'+encodeURIComponent(this.userId())+'&select=*',{headers:this.headers()})},
+ async available(v){return this.json(SUPABASE_URL+'/rest/v1/drivers?id=eq.'+encodeURIComponent(this.userId())+'&deleted_at=is.null',{method:'PATCH',headers:{...this.headers(),'Prefer':'return=representation'},body:JSON.stringify({is_available:v})})},
+ async driverRecord(){return this.json(SUPABASE_URL+'/rest/v1/drivers?id=eq.'+encodeURIComponent(this.userId())+'&deleted_at=is.null&select=*',{headers:this.headers()})},
  async requestedTrips(){return this.trips('status=eq.solicitado&driver_id=is.null&limit=20')},
  async acceptTrip(id){return this.patchTrip(id,{driver_id:this.userId(),status:'aceptado',accepted_at:new Date().toISOString()},'status=eq.solicitado&driver_id=is.null')},
  async addLocation(tripId,lat,lng,heading=0,speedKmh=0){return this.json(SUPABASE_URL+'/rest/v1/trip_locations',{method:'POST',headers:{...this.headers(),'Prefer':'return=representation'},body:JSON.stringify({trip_id:tripId,actor_id:this.userId(),lat,lng,heading,speed_kmh:speedKmh})})},
  async createShareToken(tripId){return this.json(SUPABASE_URL+'/rest/v1/rpc/create_trip_share_token',{method:'POST',headers:this.headers(),body:JSON.stringify({p_trip_id:tripId})})},
- async drivers(query=''){return this.json(SUPABASE_URL+'/rest/v1/drivers?select=*&order=created_at.desc'+(query?'&'+query:''),{headers:this.headers()})},
+ async drivers(query=''){return this.json(SUPABASE_URL+'/rest/v1/drivers?select=*&deleted_at=is.null&order=created_at.desc'+(query?'&'+query:''),{headers:this.headers()})},
  async incidents(query=''){return this.json(SUPABASE_URL+'/rest/v1/incidents?select=*&order=created_at.desc'+(query?'&'+query:''),{headers:this.headers()})},
  async fares(query=''){return this.json(SUPABASE_URL+'/rest/v1/fares?select=*&order=created_at.desc'+(query?'&'+query:''),{headers:this.headers()})},
  async createFare(data){return this.json(SUPABASE_URL+'/rest/v1/fares',{method:'POST',headers:{...this.headers(),'Prefer':'return=representation'},body:JSON.stringify({name:data.name,base_fare:Number(data.base_fare||0),per_km:Number(data.per_km||0),per_minute:Number(data.per_minute||0),minimum_fare:Number(data.minimum_fare||0),platform_commission_percent:0,active:data.active!==false})})},
  async deleteFare(id){return this.json(SUPABASE_URL+'/rest/v1/fares?id=eq.'+encodeURIComponent(id),{method:'DELETE',headers:{...this.headers(),'Prefer':'return=representation'}})},
- async patchDriver(id,data){if(data&&data.status)return this.json(SUPABASE_URL+'/rest/v1/rpc/admin_set_driver_status',{method:'POST',headers:this.headers(),body:JSON.stringify({p_driver_id:id,p_status:data.status})});throw new Error('Operación de administrador no permitida')}
+ async patchDriver(id,data){if(data&&data.status)return this.json(SUPABASE_URL+'/rest/v1/rpc/admin_set_driver_status',{method:'POST',headers:this.headers(),body:JSON.stringify({p_driver_id:id,p_status:data.status})});throw new Error('Operación de administrador no permitida')},
+ async deleteDriver(id){return this.json(SUPABASE_URL+'/rest/v1/rpc/admin_delete_driver',{method:'POST',headers:this.headers(),body:JSON.stringify({p_driver_id:id})})}
 };

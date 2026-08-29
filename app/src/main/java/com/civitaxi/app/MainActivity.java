@@ -72,7 +72,7 @@ public class MainActivity extends FragmentActivity {
       @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
         Uri uri = request.getUrl();
         String url = uri == null ? "" : uri.toString();
-        if (url.startsWith("https://nova-taxi.manjharyllempen.chatgpt.site")) return false;
+        if (url.startsWith("file:///android_asset/")) return false;
         String scheme = uri == null ? "" : uri.getScheme();
         if (("https".equalsIgnoreCase(scheme) || "http".equalsIgnoreCase(scheme)) && request.isForMainFrame()) {
           try { startActivity(new Intent(Intent.ACTION_VIEW, uri)); } catch (Exception ignored) { }

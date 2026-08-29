@@ -1,37 +1,26 @@
-# CiviTaxi
+# Nova Taxi
 
-Aplicación Android/PWA para servicio de taxi con tres perfiles dentro de un solo proyecto Android.
+Aplicación Android/PWA para servicio de taxi en Perú con tres APK independientes.
 
-## Variantes Android
+## APK
 
-- `usuarioDebug` → CiviTaxi Usuario
-- `choferDebug` → CiviTaxi Chofer
-- `adminDebug` → CiviTaxi Administrador
+- `usuarioDebug` → Nova Taxi Pasajero
+- `choferDebug` → Nova Taxi Conductor
+- `adminDebug` → Nova Taxi Administrador
 
-IDs de aplicación:
+Cada aplicación abre directamente su perfil:
 
-- `com.civitaxi.app.usuario`
-- `com.civitaxi.app.chofer`
-- `com.civitaxi.app.admin`
+- Pasajero: solicitar viaje, proponer tarifa y avisar pago en efectivo o Yape.
+- Conductor: disponibilidad, solicitudes, viajes y membresía.
+- Administración: control operativo y precios manuales de membresía semanal o mensual.
 
-## Backend
+## Compilación automática
 
-El proyecto usa Supabase para autenticación, perfiles, choferes, vehículos, viajes, ubicaciones, compartir viaje, calificaciones, incidencias y tarifas.
+GitHub Actions ejecuta `.github/workflows/android-build.yml` y publica:
 
-## Compilar localmente
+- `NovaTaxi-Pasajero.apk`
+- `NovaTaxi-Conductor.apk`
+- `NovaTaxi-Administrador.apk`
+- `NovaTaxi-APK-Pack` con los tres APK y sus verificaciones SHA-256.
 
-Con Android Studio abierto en este repositorio, usar Gradle con JDK 17 y ejecutar:
-
-```powershell
-gradle :app:assembleUsuarioDebug :app:assembleChoferDebug :app:assembleAdminDebug
-```
-
-Los APK se generan bajo `app/build/outputs/apk/<perfil>/debug/`.
-
-## GitHub Actions
-
-El workflow `.github/workflows/android-build.yml` compila automáticamente las tres APK y las publica como artifacts descargables.
-
-## Diseño
-
-Identidad principal: fondo fucsia `#E6007E`, botones fucsia oscuro y textos blancos.
+Abra la pestaña **Actions**, seleccione la ejecución más reciente y descargue los archivos desde **Artifacts**.

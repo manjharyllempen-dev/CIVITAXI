@@ -8,8 +8,8 @@ android {
         applicationId 'com.novataxi.app'
         minSdk 24
         targetSdk 35
-        versionCode 16
-        versionName '0.13.0'
+        versionCode 17
+        versionName '0.14.0'
     }
 
     buildFeatures {
@@ -22,19 +22,19 @@ android {
             dimension 'perfil'
             applicationIdSuffix '.pasajero'
             resValue 'string', 'app_name', 'Nova Taxi Pasajero'
-            buildConfigField 'String', 'APP_URL', '"https://nova-taxi.manjharyllempen.chatgpt.site/?app=passenger"'
+            buildConfigField 'String', 'APP_URL', '"file:///android_asset/index.html"'
         }
         chofer {
             dimension 'perfil'
             applicationIdSuffix '.conductor'
             resValue 'string', 'app_name', 'Nova Taxi Conductor'
-            buildConfigField 'String', 'APP_URL', '"https://nova-taxi.manjharyllempen.chatgpt.site/?app=driver"'
+            buildConfigField 'String', 'APP_URL', '"file:///android_asset/index.html"'
         }
         admin {
             dimension 'perfil'
             applicationIdSuffix '.administrador'
             resValue 'string', 'app_name', 'Nova Taxi Administrador'
-            buildConfigField 'String', 'APP_URL', '"https://nova-taxi.manjharyllempen.chatgpt.site/?app=admin"'
+            buildConfigField 'String', 'APP_URL', '"file:///android_asset/index.html"'
         }
     }
 }

@@ -22,10 +22,10 @@
     `;
     document.head.appendChild(style);
     const brand=document.querySelector('.brand');
-    if(brand)brand.innerHTML=`<img class="civi-brand-logo" src="civitaxi-logo.svg" alt="Logo CiviTaxi"><span class="civi-brand-copy"><b>CiviTaxi</b><small>${roleName()}</small></span>`;
+    if(brand)brand.innerHTML=`<img class="civi-brand-logo" src="civitaxi-logo.svg" alt="Logo Nova Taxi"><span class="civi-brand-copy"><b>Nova Taxi</b><small>${roleName()}</small></span>`;
     const splash=document.createElement('div');
     splash.className='civi-splash';
-    splash.innerHTML=`<img src="civitaxi-logo.svg" alt="CiviTaxi"><strong>CiviTaxi</strong><span>${roleName()}</span>`;
+    splash.innerHTML=`<img src="civitaxi-logo.svg" alt="Nova Taxi"><strong>Nova Taxi</strong><span>${roleName()}</span>`;
     document.body.appendChild(splash);
     setTimeout(()=>{splash.style.opacity='0';setTimeout(()=>splash.remove(),380)},1150);
   }
@@ -37,7 +37,7 @@
   }
 
   function installPassengerRegistration(){
-    if(!/CiviTaxi Usuario/i.test(document.title))return;
+    if(!/Nova Taxi Usuario/i.test(document.title))return;
     window.userRegister=async function(){
       const full=String($('name')?.value||'').trim();
       const ph=String($('phone')?.value||'').trim();
@@ -51,7 +51,7 @@
         if(!emailOk(mail))throw new Error('Ingresa un correo válido.');
         if(password.length<8)throw new Error('La contraseña debe tener al menos 8 caracteres.');
         busyButton('register',/REGISTRARME/i,true);
-        setMsg('regMsg','Creando tu cuenta CiviTaxi...');
+        setMsg('regMsg','Creando tu cuenta Nova Taxi...');
         await Civi.signUp(mail,password,full,'usuario');
         await Civi.updateProfile({phone:ph,dni:doc});
         const file=$('userPhoto')?.files?.[0]||null;
@@ -101,7 +101,7 @@
   }
 
   function installDriverRegistration(){
-    if(!/CiviTaxi Chofer/i.test(document.title))return;
+    if(!/Nova Taxi Chofer/i.test(document.title))return;
     window.uploadDriverMedia=uploadDriverMediaFixed;
     window.driverRegister=async function(){
       const full=String($('name')?.value||'').trim();
@@ -152,7 +152,7 @@
   }
 
   function installTripShare(){
-    if(!/CiviTaxi Usuario/i.test(document.title))return;
+    if(!/Nova Taxi Usuario/i.test(document.title))return;
     window.shareCurrentTrip=async function(){
       try{
         if(typeof currentTrip==='undefined'||!currentTrip)return;
@@ -171,7 +171,7 @@
         const mapsUrl=Number.isFinite(lat)&&Number.isFinite(lng)&&Number.isFinite(dlat)&&Number.isFinite(dlng)
           ?'https://www.google.com/maps/dir/?api=1&origin='+encodeURIComponent(lat+','+lng)+'&destination='+encodeURIComponent(dlat+','+dlng)+'&travelmode=driving'
           :'';
-        const text='🚕 Sigue mi viaje en CiviTaxi\n\n📡 Seguimiento en vivo:\n'+liveUrl+(mapsUrl?'\n\n🗺️ Abrir ruta en Google Maps:\n'+mapsUrl:'')+'\n\nEl enlace de CiviTaxi se actualiza durante el viaje.';
+        const text='🚕 Sigue mi viaje en Nova Taxi\n\n📡 Seguimiento en vivo:\n'+liveUrl+(mapsUrl?'\n\n🗺️ Abrir ruta en Google Maps:\n'+mapsUrl:'')+'\n\nEl enlace de Nova Taxi se actualiza durante el viaje.';
         nativeShare(text);
       }catch(e){alert(String(e&&e.message||e))}
     };

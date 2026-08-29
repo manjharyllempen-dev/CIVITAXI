@@ -1,6 +1,9 @@
 package com.civitaxi.app;
 
 import android.Manifest;
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
@@ -11,6 +14,7 @@ import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.Looper;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
@@ -36,12 +40,16 @@ import java.util.concurrent.Executor;
 public class MainActivity extends FragmentActivity {
   private static final int LOCATION_REQUEST = 1001;
   private static final int FILE_CHOOSER_REQUEST = 1002;
+  private static final int NOTIFICATION_REQUEST = 1003;
+  private static final String TRIP_CHANNEL_ID = "civitaxi_trip_status";
   private WebView web;
   private ValueCallback<Uri[]> filePathCallback;
 
   @Override public void onCreate(Bundle b) {
     super.onCreate(b);
     requestLocationPermissionIfNeeded();
+    createTripNotificationChannel();
+    requestNotificationPermissionIfNeeded();
 
     web = new WebView(this);
     web.setBackgroundColor(0xFF05020A);
@@ -98,6 +106,13 @@ public class MainActivity extends FragmentActivity {
     setContentView(web);
   }
 
+  @Override protected void onResume() {
+    super.onResume();
+    if (web != null) {
+      web.post(() -> web.evaluateJavascript("window.onCiviResume && window.onCiviResume()", null));
+    }
+  }
+
   private boolean hasLocationPermission() {
     return ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
       || ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
@@ -107,6 +122,42 @@ public class MainActivity extends FragmentActivity {
     if (!hasLocationPermission()) {
       requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, LOCATION_REQUEST);
     }
+  }
+
+  private void requestNotificationPermissionIfNeeded() {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+      && ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+      requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, NOTIFICATION_REQUEST);
+    }
+  }
+
+  private void createTripNotificationChannel() {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return;
+    NotificationManager manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+    if (manager == null) return;
+    NotificationChannel channel = new NotificationChannel(TRIP_CHANNEL_ID, "Estado del viaje", NotificationManager.IMPORTANCE_HIGH);
+    channel.setDescription("Avisos de viaje aceptado, chofer en camino y chofer en la puerta");
+    channel.setSound(null, null);
+    channel.enableVibration(false);
+    manager.createNotificationChannel(channel);
+  }
+
+  private void showTripStatusNotification(String title, String message) {
+    try {
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+        && ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return;
+      Notification.Builder builder = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+        ? new Notification.Builder(this, TRIP_CHANNEL_ID)
+        : new Notification.Builder(this);
+      builder.setSmallIcon(android.R.drawable.ic_dialog_info)
+        .setContentTitle(title == null || title.trim().isEmpty() ? "CiviTaxi" : title)
+        .setContentText(message == null ? "" : message)
+        .setAutoCancel(true)
+        .setPriority(Notification.PRIORITY_HIGH)
+        .setSound(null);
+      NotificationManager manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+      if (manager != null) manager.notify((int) (System.currentTimeMillis() % Integer.MAX_VALUE), builder.build());
+    } catch (Exception ignored) { }
   }
 
   private Location bestLastLocation() {
@@ -171,20 +222,35 @@ public class MainActivity extends FragmentActivity {
     runOnUiThread(() -> web.evaluateJavascript("window.onBiometricResult && window.onBiometricResult(" + ok + ", '" + safe + "')", null));
   }
 
-  private void playTripAlertNative() {
+  private void ringAndVibrate() {
+    try {
+      Uri sound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+      Ringtone ringtone = RingtoneManager.getRingtone(MainActivity.this, sound);
+      if (ringtone != null) ringtone.play();
+    } catch (Exception ignored) { }
+    try {
+      Vibrator vibrator = (Vibrator) getSystemService(VIBRATOR_SERVICE);
+      if (vibrator != null && vibrator.hasVibrator()) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) vibrator.vibrate(VibrationEffect.createOneShot(500, VibrationEffect.DEFAULT_AMPLITUDE));
+        else vibrator.vibrate(500);
+      }
+    } catch (Exception ignored) { }
+  }
+
+  private void playTripAlertNative(int times) {
+    int count = Math.max(1, Math.min(4, times));
     runOnUiThread(() -> {
-      try {
-        Uri sound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-        Ringtone ringtone = RingtoneManager.getRingtone(MainActivity.this, sound);
-        if (ringtone != null) ringtone.play();
-      } catch (Exception ignored) { }
-      try {
-        Vibrator vibrator = (Vibrator) getSystemService(VIBRATOR_SERVICE);
-        if (vibrator != null && vibrator.hasVibrator()) {
-          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) vibrator.vibrate(VibrationEffect.createOneShot(700, VibrationEffect.DEFAULT_AMPLITUDE));
-          else vibrator.vibrate(700);
-        }
-      } catch (Exception ignored) { }
+      Handler handler = new Handler(Looper.getMainLooper());
+      for (int i = 0; i < count; i++) {
+        handler.postDelayed(this::ringAndVibrate, i * 900L);
+      }
+    });
+  }
+
+  private void tripStatusAlertNative(String title, String message) {
+    runOnUiThread(() -> {
+      showTripStatusNotification(title, message);
+      playTripAlertNative(2);
     });
   }
 
@@ -222,7 +288,9 @@ public class MainActivity extends FragmentActivity {
       });
     }
 
-    @JavascriptInterface public void tripAlert() { playTripAlertNative(); }
+    @JavascriptInterface public void tripAlert() { playTripAlertNative(1); }
+
+    @JavascriptInterface public void tripStatusAlert(String title, String message) { tripStatusAlertNative(title, message); }
 
     @JavascriptInterface public String getLastLocation() {
       try {

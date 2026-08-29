@@ -1,9 +1,7 @@
-name: Build CiviTaxi APKs
+name: Build Nova Taxi APKs
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
     branches: [ main ]
   workflow_dispatch:
 
@@ -19,31 +17,31 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - name: Build three debug APKs
+      - name: Compilar tres APK
         run: gradle :app:assembleUsuarioDebug :app:assembleChoferDebug :app:assembleAdminDebug
-      - name: Prepare easy-to-share APK names
+      - name: Preparar APK para descargar y compartir
         run: |
           mkdir -p dist
-          cp app/build/outputs/apk/usuario/debug/*.apk dist/CiviTaxi-Usuario.apk
-          cp app/build/outputs/apk/chofer/debug/*.apk dist/CiviTaxi-Chofer.apk
-          cp app/build/outputs/apk/admin/debug/*.apk dist/CiviTaxi-Administrador.apk
+          cp app/build/outputs/apk/usuario/debug/*.apk dist/NovaTaxi-Pasajero.apk
+          cp app/build/outputs/apk/chofer/debug/*.apk dist/NovaTaxi-Conductor.apk
+          cp app/build/outputs/apk/admin/debug/*.apk dist/NovaTaxi-Administrador.apk
           cd dist
-          sha256sum CiviTaxi-Usuario.apk CiviTaxi-Chofer.apk CiviTaxi-Administrador.apk > SHA256SUMS.txt
+          sha256sum NovaTaxi-Pasajero.apk NovaTaxi-Conductor.apk NovaTaxi-Administrador.apk > SHA256SUMS.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: CiviTaxi-Usuario
-          path: dist/CiviTaxi-Usuario.apk
+          name: NovaTaxi-Pasajero
+          path: dist/NovaTaxi-Pasajero.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: CiviTaxi-Chofer
-          path: dist/CiviTaxi-Chofer.apk
+          name: NovaTaxi-Conductor
+          path: dist/NovaTaxi-Conductor.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: CiviTaxi-Administrador
-          path: dist/CiviTaxi-Administrador.apk
+          name: NovaTaxi-Administrador
+          path: dist/NovaTaxi-Administrador.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: CiviTaxi-APK-Pack
+          name: NovaTaxi-APK-Pack
           path: |
             dist/*.apk
             dist/SHA256SUMS.txt

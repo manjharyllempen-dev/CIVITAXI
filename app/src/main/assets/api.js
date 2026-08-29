@@ -7,7 +7,19 @@ const Civi={
  saveSession(j){if(j&&j.access_token){localStorage.setItem('sb_token',j.access_token);if(j.refresh_token)localStorage.setItem('sb_refresh',j.refresh_token)}return j},
  async refreshSession(){const refresh_token=this.refreshToken();if(!refresh_token)throw new Error('Sesión expirada');const r=await fetch(SUPABASE_URL+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:this.headers(false),body:JSON.stringify({refresh_token})});let j=null;try{j=await r.json()}catch(e){j=null}if(!r.ok||!j||!j.access_token){this.signOut();throw new Error((j&&(j.msg||j.message||j.error_description))||'Sesión expirada')}return this.saveSession(j)},
  async json(url,opts={},retry=true){let r=await fetch(url,opts);if(r.status===401&&retry&&this.refreshToken()&&!url.includes('/auth/v1/token')){await this.refreshSession();const h={...(opts.headers||{}),Authorization:'Bearer '+this.token(),apikey:SUPABASE_KEY};return this.json(url,{...opts,headers:h},false)}let j=null;try{j=await r.json()}catch(e){j=null}if(!r.ok)throw new Error((j&&(j.error||j.msg||j.message||j.error_description||j.hint))||('HTTP '+r.status));return j},
- async signUp(email,password,fullName,role='usuario'){await this.json(SUPABASE_URL+'/functions/v1/signup-auto-confirm',{method:'POST',headers:this.headers(false),body:JSON.stringify({email,password,full_name:fullName,role})});return this.signIn(email,password)},
+ async signUp(email,password,fullName,role='usuario'){
+   try{
+     await this.json(SUPABASE_URL+'/functions/v1/signup-auto-confirm',{method:'POST',headers:this.headers(false),body:JSON.stringify({email,password,full_name:fullName,role})});
+   }catch(e){
+     const text=String(e&&e.message||e||'');
+     if(!/ya est[aá] registr|already|account_exists|contrase(?:ñ|n)a original/i.test(text))throw e;
+   }
+   try{return await this.signIn(email,password)}catch(e){
+     const text=String(e&&e.message||e||'');
+     if(/invalid login credentials|credenciales|password|contrase(?:ñ|n)a/i.test(text))throw new Error('Ese correo ya está registrado. Ingresa con la contraseña original o usa otro correo.');
+     throw e;
+   }
+ },
  async signIn(email,password){const j=await this.json(SUPABASE_URL+'/auth/v1/token?grant_type=password',{method:'POST',headers:this.headers(false),body:JSON.stringify({email,password})});return this.saveSession(j)},
  signOut(){localStorage.removeItem('sb_token');localStorage.removeItem('sb_refresh')},
  userId(){try{const p=(this.token()||'..').split('.')[1]||'';return JSON.parse(atob(p.replace(/-/g,'+').replace(/_/g,'/'))).sub||''}catch(e){return''}},

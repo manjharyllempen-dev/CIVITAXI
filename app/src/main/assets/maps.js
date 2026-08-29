@@ -38,3 +38,4 @@ const CiviMap=(()=>{
   }
   return{ensure,point,route,device,clear};
 })();
+window.CiviMap=CiviMap;

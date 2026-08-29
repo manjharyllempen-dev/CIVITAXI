@@ -299,6 +299,19 @@ public class MainActivity extends FragmentActivity {
 
     @JavascriptInterface public void tripStatusAlert(String title, String message) { tripStatusAlertNative(title, message); }
 
+    @JavascriptInterface public void startDriverAlertService(String accessToken, String refreshToken) {
+      getSharedPreferences("nova_driver_alert", MODE_PRIVATE).edit()
+        .putString("access_token", accessToken == null ? "" : accessToken)
+        .putString("refresh_token", refreshToken == null ? "" : refreshToken).apply();
+      Intent service = new Intent(MainActivity.this, DriverAlertService.class);
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) startForegroundService(service); else startService(service);
+    }
+
+    @JavascriptInterface public void stopDriverAlertService() {
+      getSharedPreferences("nova_driver_alert", MODE_PRIVATE).edit().clear().apply();
+      stopService(new Intent(MainActivity.this, DriverAlertService.class));
+    }
+
     @JavascriptInterface public String getLastLocation() {
       try {
         Location l = bestLastLocation();

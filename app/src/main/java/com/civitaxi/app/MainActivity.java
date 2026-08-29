@@ -20,6 +20,7 @@ import android.webkit.JavascriptInterface;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
+import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
@@ -44,12 +45,21 @@ public class MainActivity extends FragmentActivity {
 
     web = new WebView(this);
     web.setBackgroundColor(0xFF05020A);
-    web.getSettings().setJavaScriptEnabled(true);
-    web.getSettings().setDomStorageEnabled(true);
-    web.getSettings().setGeolocationEnabled(true);
-    web.getSettings().setLoadsImagesAutomatically(true);
-    web.getSettings().setAllowFileAccess(true);
-    web.getSettings().setAllowContentAccess(true);
+    WebSettings settings = web.getSettings();
+    settings.setJavaScriptEnabled(true);
+    settings.setDomStorageEnabled(true);
+    settings.setGeolocationEnabled(true);
+    settings.setLoadsImagesAutomatically(true);
+    settings.setAllowFileAccess(true);
+    settings.setAllowContentAccess(true);
+    settings.setAllowFileAccessFromFileURLs(false);
+    settings.setAllowUniversalAccessFromFileURLs(false);
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+      settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
+    }
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+      settings.setSafeBrowsingEnabled(true);
+    }
     web.setWebViewClient(new WebViewClient() {
       @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
         Uri uri = request.getUrl();

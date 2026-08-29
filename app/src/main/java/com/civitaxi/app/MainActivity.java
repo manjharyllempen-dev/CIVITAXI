@@ -3,8 +3,13 @@ package com.civitaxi.app;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.media.Ringtone;
+import android.media.RingtoneManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
 import android.webkit.GeolocationPermissions;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebChromeClient;
@@ -34,18 +39,20 @@ public class MainActivity extends FragmentActivity {
     web.getSettings().setJavaScriptEnabled(true);
     web.getSettings().setDomStorageEnabled(true);
     web.getSettings().setGeolocationEnabled(true);
+    web.getSettings().setLoadsImagesAutomatically(true);
     web.setWebViewClient(new WebViewClient() {
       @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
         Uri uri = request.getUrl();
         String url = uri == null ? "" : uri.toString();
         if (url.startsWith("file:///android_asset/")) return false;
         String scheme = uri == null ? "" : uri.getScheme();
-        if ("https".equalsIgnoreCase(scheme) || "http".equalsIgnoreCase(scheme)) {
+        if (("https".equalsIgnoreCase(scheme) || "http".equalsIgnoreCase(scheme)) && request.isForMainFrame()) {
           try {
             startActivity(new Intent(Intent.ACTION_VIEW, uri));
           } catch (Exception ignored) { }
+          return true;
         }
-        return true;
+        return false;
       }
     });
     web.setWebChromeClient(new WebChromeClient() {
@@ -65,6 +72,26 @@ public class MainActivity extends FragmentActivity {
     runOnUiThread(() -> web.evaluateJavascript("window.onBiometricResult && window.onBiometricResult(" + ok + ", '" + safe + "')", null));
   }
 
+  private void playTripAlertNative() {
+    runOnUiThread(() -> {
+      try {
+        Uri sound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+        Ringtone ringtone = RingtoneManager.getRingtone(MainActivity.this, sound);
+        if (ringtone != null) ringtone.play();
+      } catch (Exception ignored) { }
+      try {
+        Vibrator vibrator = (Vibrator) getSystemService(VIBRATOR_SERVICE);
+        if (vibrator != null && vibrator.hasVibrator()) {
+          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            vibrator.vibrate(VibrationEffect.createOneShot(700, VibrationEffect.DEFAULT_AMPLITUDE));
+          } else {
+            vibrator.vibrate(700);
+          }
+        }
+      } catch (Exception ignored) { }
+    });
+  }
+
   @Override protected void onDestroy() {
     if (web != null) {
       web.removeJavascriptInterface("Android");
@@ -81,6 +108,10 @@ public class MainActivity extends FragmentActivity {
         i.putExtra(Intent.EXTRA_TEXT, text == null ? "" : text);
         startActivity(Intent.createChooser(i, "Compartir viaje CiviTaxi"));
       });
+    }
+
+    @JavascriptInterface public void tripAlert() {
+      playTripAlertNative();
     }
 
     @JavascriptInterface public boolean biometricAvailable() {

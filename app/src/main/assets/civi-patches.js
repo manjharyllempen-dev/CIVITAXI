@@ -20,10 +20,21 @@
       .civi-splash img{width:min(58vw,220px);height:min(58vw,220px);object-fit:contain;border-radius:38px;box-shadow:0 22px 58px #000a}
       .civi-splash strong{font-size:30px;margin-top:18px;letter-spacing:.4px}.civi-splash span{margin-top:7px;color:#ffc72c;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;font-size:12px}
       .civi-busy{opacity:.7;pointer-events:none}
+      .nova-screen-brand{display:flex;align-items:center;justify-content:center;gap:9px;margin:0 auto 14px;padding:8px 12px;width:max-content;max-width:90%;border-radius:16px;background:#ffffff08;border:1px solid #ffc72c55;box-shadow:0 8px 24px #0005}
+      .nova-screen-brand img{width:46px;height:46px;object-fit:contain;border-radius:12px}
+      .nova-screen-brand span{display:flex;flex-direction:column;line-height:1.05;text-align:left}
+      .nova-screen-brand b{font-size:18px;color:#fff}.nova-screen-brand small{font-size:10px;color:#ffc72c;font-weight:900;letter-spacing:1px;text-transform:uppercase;margin-top:4px}
     `;
     document.head.appendChild(style);
     const brand=document.querySelector('.brand');
     if(brand)brand.innerHTML=`<img class="civi-brand-logo" src="civitaxi-logo.svg" alt="Logo Nova Taxi"><span class="civi-brand-copy"><b>Nova Taxi</b><small>${roleName()}</small></span>`;
+    document.querySelectorAll('section').forEach(section=>{
+      if(section.querySelector(':scope > .nova-screen-brand'))return;
+      const mark=document.createElement('div');
+      mark.className='nova-screen-brand';
+      mark.innerHTML=`<img src="${logoFile()}" alt="Nova Taxi"><span><b>Nova Taxi</b><small>${roleName()}</small></span>`;
+      section.insertBefore(mark,section.firstChild);
+    });
     const splash=document.createElement('div');
     splash.className='civi-splash';
     splash.innerHTML=`<img src="civitaxi-logo.svg" alt="Nova Taxi"><strong>Nova Taxi</strong><span>${roleName()}</span>`;

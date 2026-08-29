@@ -3,7 +3,7 @@
   const $=id=>document.getElementById(id);
   const setMsg=(id,text)=>{const el=$(id);if(el)el.textContent=text||''};
   const emailOk=v=>/^\S+@\S+\.\S+$/.test(String(v||'').trim());
-  const accountExists=e=>/ya est[aá] registr|already|account_exists|contrase(?:ñ|n)a original|otro tipo de cuenta/i.test(String(e&&e.message||e||''));
+  const accountExists=e=>/ya est[aá] registr|already|account_exists|contrase(?:ñ|n)a original|otro correo/i.test(String(e&&e.message||e||''));
   const roleName=()=>/Chofer/i.test(document.title)?'Chofer':/Administrador/i.test(document.title)?'Administrador':'Usuario';
 
   function installBranding(){
@@ -22,36 +22,12 @@
     `;
     document.head.appendChild(style);
     const brand=document.querySelector('.brand');
-    if(brand){
-      brand.innerHTML=`<img class="civi-brand-logo" src="civitaxi-logo.svg" alt="Logo CiviTaxi"><span class="civi-brand-copy"><b>CiviTaxi</b><small>${roleName()}</small></span>`;
-    }
+    if(brand)brand.innerHTML=`<img class="civi-brand-logo" src="civitaxi-logo.svg" alt="Logo CiviTaxi"><span class="civi-brand-copy"><b>CiviTaxi</b><small>${roleName()}</small></span>`;
     const splash=document.createElement('div');
     splash.className='civi-splash';
     splash.innerHTML=`<img src="civitaxi-logo.svg" alt="CiviTaxi"><strong>CiviTaxi</strong><span>${roleName()}</span>`;
     document.body.appendChild(splash);
     setTimeout(()=>{splash.style.opacity='0';setTimeout(()=>splash.remove(),380)},1150);
-  }
-
-  async function signUpOrResume(email,password,name,role){
-    try{
-      await Civi.signUp(email,password,name,role);
-      return {created:true};
-    }catch(e){
-      if(!accountExists(e))throw e;
-      try{
-        await Civi.signIn(email,password);
-        const rows=await Civi.profile();
-        const profile=Array.isArray(rows)?rows[0]:rows;
-        if(profile&&profile.role&&profile.role!==role){
-          Civi.signOut();
-          throw new Error('Ese correo pertenece a otra clase de cuenta CiviTaxi. Usa otro correo para este registro.');
-        }
-        return {created:false};
-      }catch(loginError){
-        if(/otra clase|otro tipo/i.test(String(loginError&&loginError.message||'')))throw loginError;
-        throw new Error('Ese correo ya tiene una cuenta. Ingresa con la contraseña original o usa otro correo.');
-      }
-    }
   }
 
   function busyButton(sectionId,pattern,busy){
@@ -76,28 +52,45 @@
         if(password.length<8)throw new Error('La contraseña debe tener al menos 8 caracteres.');
         busyButton('register',/REGISTRARME/i,true);
         setMsg('regMsg','Creando tu cuenta CiviTaxi...');
-        const state=await signUpOrResume(mail,password,full,'usuario');
+        await Civi.signUp(mail,password,full,'usuario');
         await Civi.updateProfile({phone:ph,dni:doc});
         const file=$('userPhoto')?.files?.[0]||null;
-        let photoPending=false;
         if(file){
           setMsg('regMsg','Cuenta creada. Guardando tu foto...');
-          try{const u=await Civi.uploadFile('civitaxi-public',file,'perfil-usuario');await Civi.updateProfile({avatar_url:u.url})}catch(photoError){photoPending=true;console.warn('Foto de usuario pendiente',photoError)}
+          try{const u=await Civi.uploadFile('civitaxi-public',file,'perfil-usuario');await Civi.updateProfile({avatar_url:u.url})}
+          catch(photoError){console.warn('Foto de usuario pendiente',photoError);setMsg('regMsg','Tu cuenta ya quedó creada. La foto no pudo subirse; podrás agregarla después.')}
         }
-        setMsg('regMsg',state.created?'Cuenta creada correctamente.':'Cuenta recuperada correctamente.');
-        if(photoPending) setMsg('regMsg','Tu cuenta quedó creada. La foto no se pudo subir; puedes continuar y cambiarla después.');
+        setMsg('regMsg','Cuenta creada correctamente.');
         if(typeof resumePassengerTrip==='function'){
           const resumed=await resumePassengerTrip();
           if(!resumed&&typeof showHome==='function')showHome();
         }else if(typeof showHome==='function')showHome();
       }catch(e){
-        setMsg('regMsg',String(e&&e.message||e||'No se pudo registrar.'));
+        const text=String(e&&e.message||e||'No se pudo registrar.');
+        setMsg('regMsg',text);
         if(accountExists(e)){
           if($('email'))$('email').value=mail;
-          setTimeout(()=>{if(typeof go==='function')go('login');setMsg('loginMsg',String(e&&e.message||e))},700);
+          setTimeout(()=>{if(typeof go==='function')go('login');setMsg('loginMsg',text)},700);
         }
       }finally{busyButton('register',/REGISTRARME/i,false)}
     };
+  }
+
+  async function uploadDriverMediaFixed(prefix=''){
+    const complete=prefix==='complete';
+    const ids=complete
+      ?{profile:'completeProfilePhoto',license:'completeLicensePhoto',vehicle:'completeVehiclePhoto',soat:'completeSoatPhoto'}
+      :{profile:'profilePhoto',license:'licensePhoto',vehicle:'vehiclePhoto',soat:'soatPhoto'};
+    const profile=$(ids.profile)?.files?.[0]||null;
+    const lic=$(ids.license)?.files?.[0]||null;
+    const veh=$(ids.vehicle)?.files?.[0]||null;
+    const soat=$(ids.soat)?.files?.[0]||null;
+    let vehicleUrl='';
+    if(profile){const u=await Civi.uploadFile('civitaxi-public',profile,'perfil-chofer');await Civi.updateProfile({avatar_url:u.url})}
+    if(veh){const u=await Civi.uploadFile('civitaxi-public',veh,'vehiculo');vehicleUrl=u.url}
+    if(lic){const u=await Civi.uploadFile('civitaxi-private',lic,'licencia');await Civi.addDriverDocument('licencia',u.path)}
+    if(soat){const u=await Civi.uploadFile('civitaxi-private',soat,'soat');await Civi.addDriverDocument('soat',u.path)}
+    return vehicleUrl;
   }
 
   function prefillDriverComplete(){
@@ -109,6 +102,7 @@
 
   function installDriverRegistration(){
     if(!/CiviTaxi Chofer/i.test(document.title))return;
+    window.uploadDriverMedia=uploadDriverMediaFixed;
     window.driverRegister=async function(){
       const full=String($('name')?.value||'').trim();
       const ph=String($('driverPhone')?.value||'').trim();
@@ -126,31 +120,32 @@
         if(!emailOk(mail))throw new Error('Ingresa un correo válido.');
         if(password.length<8)throw new Error('La contraseña debe tener al menos 8 caracteres.');
         if(files.some(f=>!f))throw new Error('Adjunta foto de tu cara, licencia, vehículo y SOAT antes de enviar.');
-        const tooLarge=files.find(f=>f&&f.size>20*1024*1024);
-        if(tooLarge)throw new Error('Uno de los archivos supera 20 MB. Elige una foto o PDF más liviano.');
+        if(files.some(f=>f&&f.size>20*1024*1024))throw new Error('Uno de los archivos supera 20 MB. Elige una foto o PDF más liviano.');
         busyButton('register',/ENVIAR REGISTRO/i,true);
         setMsg('regMsg','Creando cuenta de chofer...');
-        const state=await signUpOrResume(mail,password,full,'chofer');
+        await Civi.signUp(mail,password,full,'chofer');
         await Civi.updateProfile({phone:ph});
         await Civi.ensureDriver(doc,lic);
         try{
-          setMsg('regMsg','Cuenta creada. Subiendo documentos...');
-          const vehicleUrl=await uploadDriverMedia('');
+          setMsg('regMsg','Cuenta creada. Subiendo foto y documentos...');
+          const vehicleUrl=await uploadDriverMediaFixed('');
+          setMsg('regMsg','Documentos cargados. Guardando vehículo...');
           await Civi.ensureVehicle(plateValue,vehicleUrl);
         }catch(uploadError){
           prefillDriverComplete();
           if(typeof go==='function')go('complete');
-          setMsg('completeMsg','Tu cuenta de chofer quedó creada y no se perdió. Revisa tu conexión, vuelve a seleccionar los documentos y pulsa ENVIAR A REVISIÓN. Detalle: '+String(uploadError&&uploadError.message||uploadError));
+          setMsg('completeMsg','Tu cuenta de chofer quedó creada y no se perdió. Vuelve a seleccionar los documentos y pulsa ENVIAR A REVISIÓN. Detalle: '+String(uploadError&&uploadError.message||uploadError));
           return;
         }
-        setMsg('regMsg',state.created?'Registro enviado correctamente. El administrador revisará tus documentos.':'Registro recuperado y actualizado. El administrador revisará tus documentos.');
+        setMsg('regMsg','Registro enviado correctamente. El administrador revisará tus documentos.');
         if(typeof initDriver==='function')await initDriver();
         if(typeof showDriverHome==='function')showDriverHome();
       }catch(e){
-        setMsg('regMsg',String(e&&e.message||e||'No se pudo registrar.'));
+        const text=String(e&&e.message||e||'No se pudo registrar.');
+        setMsg('regMsg',text);
         if(accountExists(e)){
           if($('email'))$('email').value=mail;
-          setTimeout(()=>{if(typeof go==='function')go('login');setMsg('loginMsg',String(e&&e.message||e))},700);
+          setTimeout(()=>{if(typeof go==='function')go('login');setMsg('loginMsg',text)},700);
         }
       }finally{busyButton('register',/ENVIAR REGISTRO/i,false)}
     };

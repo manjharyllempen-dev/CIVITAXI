@@ -28,6 +28,7 @@ const Civi={
  async updateProfile(data){return this.json(SUPABASE_URL+'/rest/v1/profiles?id=eq.'+encodeURIComponent(this.userId()),{method:'PATCH',headers:{...this.headers(),'Prefer':'return=representation'},body:JSON.stringify(data)})},
  async trips(query=''){return this.json(SUPABASE_URL+'/rest/v1/trips?select=*&order=requested_at.desc'+(query?'&'+query:''),{headers:this.headers()})},
  async activePassengerTrip(){return this.trips('passenger_id=eq.'+encodeURIComponent(this.userId())+'&status=in.(solicitado,aceptado,chofer_en_camino,chofer_llego,en_viaje)&limit=1')},
+ async pendingPassengerRating(){return this.json(SUPABASE_URL+'/rest/v1/rpc/passenger_pending_rating',{method:'POST',headers:this.headers(),body:'{}'})},
  async activeDriverTrip(){return this.trips('driver_id=eq.'+encodeURIComponent(this.userId())+'&status=in.(aceptado,chofer_en_camino,chofer_llego,en_viaje)&limit=1')},
  async createTrip(data){return this.json(SUPABASE_URL+'/rest/v1/trips',{method:'POST',headers:{...this.headers(),'Prefer':'return=representation'},body:JSON.stringify({...data,passenger_id:this.userId(),status:'solicitado'})})},
  async patchTrip(id,data,extra=''){return this.json(SUPABASE_URL+'/rest/v1/trips?id=eq.'+encodeURIComponent(id)+(extra?'&'+extra:''),{method:'PATCH',headers:{...this.headers(),'Prefer':'return=representation'},body:JSON.stringify(data)})},

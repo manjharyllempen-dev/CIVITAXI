@@ -126,12 +126,15 @@ function installPassengerManualRouteLogic(){
       const originHidden=document.getElementById('origin'),destHidden=document.getElementById('destination');
       if(originHidden){originHidden.value=o.name;originHidden.dataset.lat=String(o.lat);originHidden.dataset.lng=String(o.lng)}
       if(destHidden){destHidden.value=d.name;destHidden.dataset.lat=String(d.lat);destHidden.dataset.lng=String(d.lng)}
-      draftTrip={origin_address:o.name,origin_lat:o.lat,origin_lng:o.lng,destination_address:d.name,destination_lat:d.lat,destination_lng:d.lng,estimated_distance_km:Number(route.km.toFixed(2)),estimated_duration_min:Math.max(1,Math.round(route.min)),estimated_fare:fare,payment_method:'efectivo'};
+      const chosenPayment=(typeof selectedPayment!=='undefined'&&selectedPayment==='yape')?'yape':'efectivo';
+      draftTrip={origin_address:o.name,origin_lat:o.lat,origin_lng:o.lng,destination_address:d.name,destination_lat:d.lat,destination_lng:d.lng,estimated_distance_km:Number(route.km.toFixed(2)),estimated_duration_min:Math.max(1,Math.round(route.min)),estimated_fare:fare,payment_method:chosenPayment};
       const routeEl=document.getElementById('previewRoute'),distEl=document.getElementById('previewDistance'),timeEl=document.getElementById('previewTime'),fareEl=document.getElementById('previewFare');
       if(routeEl)routeEl.textContent='📍 '+o.name+' → 🏁 '+d.name;
       if(distEl)distEl.textContent=route.km.toFixed(1)+' km';
       if(timeEl)timeEl.textContent=Math.round(route.min)+' min';
       if(fareEl)fareEl.textContent=money(fare);
+      const paymentEl=document.getElementById('previewPayment');
+      if(paymentEl)paymentEl.textContent=typeof paymentText==='function'?paymentText(chosenPayment):(chosenPayment==='yape'?'🟣 Pago informado: YAPE':'💵 Pago informado: EFECTIVO');
       if(typeof msg==='function')msg('homeMsg','');
       go('preview');
       setTimeout(()=>CiviMap.route('mapPreview',o,d,o.name,d.name),100);

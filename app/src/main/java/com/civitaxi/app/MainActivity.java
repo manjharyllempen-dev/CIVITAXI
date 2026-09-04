@@ -312,6 +312,21 @@ public class MainActivity extends FragmentActivity {
       stopService(new Intent(MainActivity.this, DriverAlertService.class));
     }
 
+    @JavascriptInterface public void startPassengerAlertService(String accessToken, String refreshToken, String tripId) {
+      getSharedPreferences("nova_passenger_alert", MODE_PRIVATE).edit()
+        .putString("access_token", accessToken == null ? "" : accessToken)
+        .putString("refresh_token", refreshToken == null ? "" : refreshToken)
+        .putString("trip_id", tripId == null ? "" : tripId)
+        .putString("last_status", "solicitado").apply();
+      Intent service = new Intent(MainActivity.this, PassengerAlertService.class);
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) startForegroundService(service); else startService(service);
+    }
+
+    @JavascriptInterface public void stopPassengerAlertService() {
+      getSharedPreferences("nova_passenger_alert", MODE_PRIVATE).edit().clear().apply();
+      stopService(new Intent(MainActivity.this, PassengerAlertService.class));
+    }
+
     @JavascriptInterface public String getLastLocation() {
       try {
         Location l = bestLastLocation();

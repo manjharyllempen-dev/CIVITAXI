@@ -107,7 +107,7 @@ function installPassengerManualRouteShell(){
 }
 function installPassengerManualRouteLogic(){
   if(!civiPassenger())return;
-  window.showHome=function(){go('home');setTimeout(()=>{try{CiviMap.ensure('mapHome')}catch(e){}},120)};
+  window.showHome=function(resetRoute=false){if(resetRoute){try{clearRouteFields()}catch(e){}try{civiClearAllRouteFields()}catch(e){}}go('home');setTimeout(()=>{if(resetRoute){try{clearRouteFields()}catch(e){}try{civiClearAllRouteFields()}catch(e){}}try{CiviMap.ensure('mapHome')}catch(e){}},120)};
   window.useCurrentLocation=function(){};
   window.prepareTrip=async function(){
     if(!Civi.token()){go('login');return}

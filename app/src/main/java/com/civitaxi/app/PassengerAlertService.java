@@ -33,7 +33,7 @@ public class PassengerAlertService extends Service {
   private final Handler handler=new Handler(Looper.getMainLooper());
   private final ExecutorService executor=Executors.newSingleThreadExecutor();
   private boolean running=false;
-  private final Runnable poll=new Runnable(){@Override public void run(){if(!running)return;executor.execute(()->{checkTrip();handler.postDelayed(this,5000);});}};
+  private final Runnable poll=new Runnable(){@Override public void run(){if(!running)return;executor.execute(()->{checkTrip();handler.postDelayed(this,2500);});}};
 
   @Override public void onCreate(){super.onCreate();createChannels();}
   @Override public int onStartCommand(Intent intent,int flags,int startId){running=true;startForeground(4201,activeNotification());handler.removeCallbacks(poll);handler.post(poll);return START_STICKY;}

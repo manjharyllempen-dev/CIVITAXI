@@ -107,7 +107,7 @@ function installPassengerManualRouteShell(){
 }
 function installPassengerManualRouteLogic(){
   if(!civiPassenger())return;
-  window.showHome=function(resetRoute=false){if(resetRoute){try{clearRouteFields()}catch(e){}try{civiClearAllRouteFields()}catch(e){}}go('home');setTimeout(()=>{if(resetRoute){try{clearRouteFields()}catch(e){}try{civiClearAllRouteFields()}catch(e){}}try{CiviMap.ensure('mapHome')}catch(e){}},120)};
+  window.showHome=function(){go('home');setTimeout(()=>{try{CiviMap.ensure('mapHome')}catch(e){}},120)};
   window.useCurrentLocation=function(){};
   window.prepareTrip=async function(){
     if(!Civi.token()){go('login');return}
@@ -142,6 +142,28 @@ function installPassengerManualRouteLogic(){
       if(typeof msg==='function')msg('homeMsg',e&&e.message?e.message:'No se pudo calcular la ruta. Revisa las direcciones e inténtalo nuevamente.');
     }finally{
       if(calc){calc.disabled=false;calc.textContent=calc.dataset.oldText||'CALCULAR RUTA'}
+    }
+  };
+  const statusCopy={
+    aceptado:{title:'Nova Taxi · Viaje aceptado',body:'Tu chofer aceptó la solicitud de viaje.'},
+    chofer_en_camino:{title:'Nova Taxi · Chofer en camino',body:'Tu chofer ya va camino a la dirección de origen.'},
+    chofer_llego:{title:'Nova Taxi · Chofer llegó',body:'Tu chofer llegó al origen. Ya puedes salir a encontrarlo.'},
+    en_viaje:{title:'Nova Taxi · Viaje iniciado',body:'El chofer inició tu viaje hacia el destino.'},
+    completado:{title:'Nova Taxi · Llegaste al destino',body:'Tu viaje llegó al destino y fue finalizado.'}
+  };
+  window.alertForStatus=function(status){
+    const copy=statusCopy[status];
+    if(copy){
+      try{
+        if(window.Android&&Android.tripStatusAlert)Android.tripStatusAlert(copy.title,copy.body);
+        else nativeTripAlert(2,900);
+      }catch(e){nativeTripAlert(2,900)}
+      try{if(typeof markTripStatus==='function')markTripStatus(status)}catch(e){}
+      return;
+    }
+    if(status==='cancelado'){
+      nativeTripAlert(2,900);
+      try{if(typeof markTripStatus==='function')markTripStatus(status)}catch(e){}
     }
   };
 }

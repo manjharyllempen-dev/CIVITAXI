@@ -24,7 +24,7 @@ const Civi={
  signOut(){localStorage.removeItem('sb_token');localStorage.removeItem('sb_refresh')},
  userId(){try{const p=(this.token()||'..').split('.')[1]||'';return JSON.parse(atob(p.replace(/-/g,'+').replace(/_/g,'/'))).sub||''}catch(e){return''}},
  async profile(){return this.json(SUPABASE_URL+'/rest/v1/profiles?id=eq.'+encodeURIComponent(this.userId())+'&select=*',{headers:this.headers()})},
- async profiles(query=''){return this.json(SUPABASE_URL+'/rest/v1/profiles?select=id,role,full_name,phone,email,avatar_url,rating,account_status,suspended_reason,created_at&order=created_at.desc'+(query?'&'+query:''),{headers:this.headers()})},
+ async profiles(query=''){return this.json(SUPABASE_URL+'/rest/v1/profiles?select=id,role,full_name,phone,email,avatar_url,rating,created_at&order=created_at.desc'+(query?'&'+query:''),{headers:this.headers()})},
  async updateProfile(data){return this.json(SUPABASE_URL+'/rest/v1/profiles?id=eq.'+encodeURIComponent(this.userId()),{method:'PATCH',headers:{...this.headers(),'Prefer':'return=representation'},body:JSON.stringify(data)})},
  async trips(query=''){return this.json(SUPABASE_URL+'/rest/v1/trips?select=*&order=requested_at.desc'+(query?'&'+query:''),{headers:this.headers()})},
  async activePassengerTrip(){return this.trips('passenger_id=eq.'+encodeURIComponent(this.userId())+'&status=in.(solicitado,aceptado,chofer_en_camino,chofer_llego,en_viaje)&limit=1')},
@@ -55,12 +55,7 @@ const Civi={
  async driverNotifications(){return this.json(SUPABASE_URL+'/rest/v1/driver_notifications?driver_id=eq.'+encodeURIComponent(this.userId())+'&select=*&order=created_at.desc&limit=30',{headers:this.headers()})},
  async markNotificationRead(id){return this.json(SUPABASE_URL+'/rest/v1/driver_notifications?id=eq.'+encodeURIComponent(id)+'&driver_id=eq.'+encodeURIComponent(this.userId()),{method:'PATCH',headers:{...this.headers(),'Prefer':'return=representation'},body:JSON.stringify({read_at:new Date().toISOString()})})},
  async adminSendDriverNotification(driverId,body){return this.json(SUPABASE_URL+'/rest/v1/rpc/admin_send_driver_notification',{method:'POST',headers:this.headers(),body:JSON.stringify({p_driver_id:driverId,p_body:body})})},
- async passengerNotifications(){return this.json(SUPABASE_URL+'/rest/v1/passenger_notifications?passenger_id=eq.'+encodeURIComponent(this.userId())+'&read_at=is.null&select=*&order=created_at.asc&limit=20',{headers:this.headers()})},
- async markPassengerNotificationRead(id){return this.json(SUPABASE_URL+'/rest/v1/passenger_notifications?id=eq.'+encodeURIComponent(id)+'&passenger_id=eq.'+encodeURIComponent(this.userId()),{method:'PATCH',headers:{...this.headers(),'Prefer':'return=representation'},body:JSON.stringify({read_at:new Date().toISOString()})})},
- async adminSendPassengerNotification(passengerId,body){return this.json(SUPABASE_URL+'/rest/v1/rpc/admin_send_passenger_notification',{method:'POST',headers:this.headers(),body:JSON.stringify({p_passenger_id:passengerId,p_body:body})})},
- async adminSetPassengerStatus(passengerId,status,reason=''){return this.json(SUPABASE_URL+'/rest/v1/rpc/admin_set_passenger_status',{method:'POST',headers:this.headers(),body:JSON.stringify({p_passenger_id:passengerId,p_status:status,p_reason:reason})})},
- async adminDeletePassenger(passengerId){return this.json(SUPABASE_URL+'/rest/v1/rpc/admin_delete_passenger',{method:'POST',headers:this.headers(),body:JSON.stringify({p_passenger_id:passengerId})})},
  async adminDriverDirectory(){return this.json(SUPABASE_URL+'/rest/v1/rpc/admin_driver_directory',{method:'POST',headers:this.headers(),body:'{}'})},
  async archivePreviousDays(){return this.json(SUPABASE_URL+'/rest/v1/rpc/archive_previous_days',{method:'POST',headers:this.headers(),body:'{}'})},
- async dailyArchives(){return this.json(SUPABASE_URL+'/rest/v1/daily_archives?select=archive_date,trips_count,completed_count,gross,trips_snapshot,archived_at&order=archive_date.desc&limit=60',{headers:this.headers()})}
+ async dailyArchives(){return this.json(SUPABASE_URL+'/rest/v1/daily_archives?select=archive_date,trips_count,completed_count,gross,archived_at&order=archive_date.desc&limit=60',{headers:this.headers()})}
 };

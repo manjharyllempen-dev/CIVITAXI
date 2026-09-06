@@ -26,9 +26,12 @@
       .nova-screen-brand b{font-size:18px;color:#fff}.nova-screen-brand small{font-size:10px;color:#ffc72c;font-weight:900;letter-spacing:1px;text-transform:uppercase;margin-top:4px}
     `;
     document.head.appendChild(style);
+    const role=roleName();
     const brand=document.querySelector('.brand');
-    if(brand)brand.innerHTML=`<img class="civi-brand-logo" src="${logoFile()}" alt="Logo Nova Taxi"><span class="civi-brand-copy"><b>Nova Taxi</b><small>${roleName()}</small></span>`;
-    document.querySelectorAll('section').forEach(section=>{
+    if(brand)brand.innerHTML=role==='Administrador'
+      ?`<img class="civi-brand-logo" src="${logoFile()}" alt="Logo Nova Taxi Administrador"><span class="civi-brand-copy"><b>Nova Taxi Administrador</b></span>`
+      :`<img class="civi-brand-logo" src="${logoFile()}" alt="Logo Nova Taxi"><span class="civi-brand-copy"><b>Nova Taxi</b><small>${role}</small></span>`;
+    if(role!=='Administrador')document.querySelectorAll('section').forEach(section=>{
       if(section.querySelector(':scope > .nova-screen-brand'))return;
       const mark=document.createElement('div');
       mark.className='nova-screen-brand';

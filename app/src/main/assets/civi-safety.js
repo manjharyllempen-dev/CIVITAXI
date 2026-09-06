@@ -1,6 +1,6 @@
 (()=>{
   'use strict';
-  const isPassenger=/Nova Taxi Usuario/i.test(document.title);
+  const isPassenger=/Nova Taxi (Usuario|Pasajero)/i.test(document.title);
   const isDriver=/Nova Taxi Chofer/i.test(document.title);
   if(!isPassenger&&!isDriver)return;
 

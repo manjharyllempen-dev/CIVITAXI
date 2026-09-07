@@ -84,7 +84,7 @@ public class MainActivity extends FragmentActivity {
       @Override public void onPageFinished(WebView view, String url) {
         super.onPageFinished(view, url);
         if (url != null && url.startsWith("file:///android_asset/")) {
-          view.evaluateJavascript("(function(){if(document.getElementById('civi-patches-loader'))return;var s=document.createElement('script');s.id='civi-patches-loader';s.src='civi-patches.js?v=7';document.body.appendChild(s);})();", null);
+          view.evaluateJavascript("(function(){if(document.getElementById('civi-patches-loader'))return;var s=document.createElement('script');s.id='civi-patches-loader';s.src='civi-patches.js?v=8';document.body.appendChild(s);})();", null);
         }
       }
     });
@@ -310,6 +310,13 @@ public class MainActivity extends FragmentActivity {
     @JavascriptInterface public void stopDriverAlertService() {
       getSharedPreferences("nova_driver_alert", MODE_PRIVATE).edit().clear().apply();
       stopService(new Intent(MainActivity.this, DriverAlertService.class));
+    }
+
+    @JavascriptInterface public void openBatteryOptimizationSettings() {
+      runOnUiThread(() -> {
+        try { startActivity(new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)); }
+        catch (Exception ignored) { try { startActivity(new Intent(Settings.ACTION_SETTINGS)); } catch (Exception ignoredAgain) { } }
+      });
     }
 
     @JavascriptInterface public void startPassengerAlertService(String accessToken, String refreshToken, String tripId) {

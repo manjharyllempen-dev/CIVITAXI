@@ -167,6 +167,83 @@ function installPassengerManualRouteLogic(){
     }
   };
 }
-function initSharedUi(){installPasswordVisibility();installPassengerPhotoRegistration();installPassengerManualRouteShell();installPassengerManualRouteLogic()}
-if(civiPassenger())installPassengerManualRouteShell();
+async function civiResolveAutomaticField(input,label){
+  const text=String(input&&input.value||'').trim();
+  if(!text)throw new Error('Ingresa '+label+'.');
+  const lat=Number(input.dataset.lat),lng=Number(input.dataset.lng);
+  if(input.dataset.lat&&input.dataset.lng&&validLatLng(lat,lng))return{lat,lng,name:text};
+  const found=await geocodePeru(text);
+  if(!found||!validLatLng(found.lat,found.lng))throw new Error('No pude localizar '+label+'. Selecciona una dirección de la lista.');
+  input.value=found.name||text;
+  input.dataset.lat=String(found.lat);
+  input.dataset.lng=String(found.lng);
+  return{lat:Number(found.lat),lng:Number(found.lng),name:input.value};
+}
+function installPassengerAutomaticRouteLogic(){
+  window.prepareTrip=async function(){
+    if(!Civi.token()){go('login');return}
+    const originInput=document.getElementById('origin'),destinationInput=document.getElementById('destination');
+    const calc=[...document.querySelectorAll('#home button')].find(b=>/CALCULAR RUTA/i.test(b.textContent||''));
+    try{
+      if(typeof msg==='function')msg('homeMsg','Localizando origen y destino...');
+      if(calc){calc.disabled=true;calc.dataset.oldText=calc.textContent;calc.textContent='CALCULANDO...'}
+      const [o,d]=await Promise.all([civiResolveAutomaticField(originInput,'el origen'),civiResolveAutomaticField(destinationInput,'el destino')]);
+      if(typeof msg==='function')msg('homeMsg','Calculando distancia y tiempo...');
+      const route=await routeEstimate(o,d);
+      if(!route||!Number.isFinite(route.km)||!Number.isFinite(route.min)||route.km<=0)throw new Error('No se pudo calcular una ruta válida.');
+      const fare=typeof passengerFare==='function'?await passengerFare(route.km,route.min):estimateFare(route.km,route.min);
+      const chosenPayment=(typeof selectedPayment!=='undefined'&&selectedPayment==='yape')?'yape':'efectivo';
+      draftTrip={origin_address:o.name,origin_lat:o.lat,origin_lng:o.lng,destination_address:d.name,destination_lat:d.lat,destination_lng:d.lng,estimated_distance_km:Number(route.km.toFixed(2)),estimated_duration_min:Math.max(1,Math.round(route.min)),estimated_fare:fare,payment_method:chosenPayment};
+      document.getElementById('previewRoute').textContent='📍 '+o.name+' → 🏁 '+d.name;
+      document.getElementById('previewDistance').textContent=route.km.toFixed(1)+' km';
+      document.getElementById('previewTime').textContent=Math.round(route.min)+' min';
+      document.getElementById('previewFare').textContent=money(fare);
+      document.getElementById('previewPayment').textContent=typeof paymentText==='function'?paymentText(chosenPayment):(chosenPayment==='yape'?'🟣 Pago informado: YAPE':'💵 Pago informado: EFECTIVO');
+      if(typeof msg==='function')msg('homeMsg','');
+      go('preview');setTimeout(()=>CiviMap.route('mapPreview',o,d,o.name,d.name),100);
+    }catch(e){
+      if(typeof msg==='function')msg('homeMsg',e&&e.message?e.message:'No se pudo calcular la ruta. Revisa las direcciones.');
+    }finally{
+      if(calc){calc.disabled=false;calc.textContent=calc.dataset.oldText||'CALCULAR RUTA'}
+    }
+  };
+}
+function installPassengerFinishLogic(){
+  const originalShow=window.showPassengerRating;
+  if(typeof originalShow==='function')window.showPassengerRating=function(trip){
+    originalShow(trip);
+    const button=document.getElementById('finishHomeBtn');
+    if(button){button.disabled=true;button.textContent='CALIFICA PARA VOLVER AL INICIO'}
+  };
+  window.finishToHome=async function(){
+    const finishedId=typeof currentTrip!=='undefined'&&currentTrip&&currentTrip.id;
+    if(finishedId)localStorage.setItem('nova_rating_closed_'+finishedId,'1');
+    localStorage.removeItem('nova_pending_passenger_trip');
+    try{if(window.Android&&Android.stopPassengerAlertService)Android.stopPassengerAlertService()}catch(e){}
+    try{if(typeof clearRouteFields==='function')clearRouteFields()}catch(e){}
+    const finish=document.getElementById('finish');
+    if(finish){finish.classList.remove('active');finish.removeAttribute('style');const card=finish.querySelector('.rating-card');if(card)card.removeAttribute('style')}
+    if(typeof currentTrip!=='undefined')currentTrip=null;
+    if(typeof partyInfo!=='undefined')partyInfo=null;
+    if(typeof loadedPartyDriverId!=='undefined')loadedPartyDriverId='';
+    if(typeof mapTripRouteId!=='undefined')mapTripRouteId='';
+    if(typeof ratingSubmitted!=='undefined')ratingSubmitted=false;
+    document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));
+    const home=document.getElementById('home');if(home)home.classList.add('active');
+    window.scrollTo(0,0);setTimeout(()=>{try{CiviMap.ensure('mapHome')}catch(e){}},120);
+  };
+  window.rateDriver=async function(stars){
+    if(typeof currentTrip==='undefined'||!currentTrip)return;
+    if(typeof completeRatingUi==='function')completeRatingUi(stars);
+    try{
+      await Civi.rateTrip(currentTrip.id,stars,'');
+      localStorage.setItem('nova_rated_'+currentTrip.id,'1');
+      if(typeof msg==='function')msg('rateMsg','Gracias. Calificación enviada. Volviendo al inicio...');
+    }catch(e){
+      if(typeof msg==='function')msg('rateMsg','Calificación registrada en el teléfono. Volviendo al inicio...');
+    }
+    setTimeout(()=>window.finishToHome(),650);
+  };
+}
+function initSharedUi(){installPasswordVisibility();installPassengerPhotoRegistration();installPassengerAutomaticRouteLogic();installPassengerFinishLogic()}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initSharedUi);else initSharedUi();

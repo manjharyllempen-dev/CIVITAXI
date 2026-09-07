@@ -14,6 +14,7 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
+import android.os.PowerManager;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
 
@@ -31,20 +32,31 @@ import java.util.concurrent.Executors;
 
 public class DriverAlertService extends Service {
   private static final String CHANNEL_ACTIVE="nova_driver_active";
-  private static final String CHANNEL_REQUEST="nova_driver_request";
+  private static final String CHANNEL_REQUEST="nova_driver_request_v2";
   private static final String API="https://rhdcbxvohnrwfogiwcte.supabase.co";
   private static final String KEY="sb_publishable_ZYYjeiNtr-pcOe5rrCUCgg_zMAgnUko";
   private final Handler handler=new Handler(Looper.getMainLooper());
   private final ExecutorService executor=Executors.newSingleThreadExecutor();
   private String lastTripId="";
   private boolean running=false;
+  private PowerManager.WakeLock wakeLock;
   private final Runnable poll=new Runnable(){@Override public void run(){if(!running)return;executor.execute(()->{checkRequests();handler.postDelayed(this,12000);});}};
 
-  @Override public void onCreate(){super.onCreate();createChannels();}
+  @Override public void onCreate(){super.onCreate();createChannels();acquireWakeLock();}
 
   @Override public int onStartCommand(Intent intent,int flags,int startId){running=true;startForeground(4101,activeNotification());handler.removeCallbacks(poll);handler.post(poll);return START_STICKY;}
 
   private SharedPreferences prefs(){return getSharedPreferences("nova_driver_alert",MODE_PRIVATE);}
+
+  private void acquireWakeLock(){
+    try{
+      PowerManager manager=(PowerManager)getSystemService(POWER_SERVICE);
+      if(manager==null)return;
+      wakeLock=manager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK,"NovaTaxi:DriverAlerts");
+      wakeLock.setReferenceCounted(false);
+      wakeLock.acquire();
+    }catch(Exception ignored){}
+  }
 
   private Notification activeNotification(){
     Intent open=new Intent(this,MainActivity.class);PendingIntent pi=PendingIntent.getActivity(this,1,open,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
@@ -52,7 +64,7 @@ public class DriverAlertService extends Service {
     return b.setSmallIcon(android.R.drawable.ic_menu_mylocation).setContentTitle("Nova Taxi Conductor conectado").setContentText("Las alertas de viaje seguirán activas con la pantalla apagada.").setOngoing(true).setContentIntent(pi).build();
   }
 
-  private void createChannels(){if(Build.VERSION.SDK_INT>=Build.VERSION_CODES.O){NotificationManager nm=getSystemService(NotificationManager.class);NotificationChannel active=new NotificationChannel(CHANNEL_ACTIVE,"Conductor conectado",NotificationManager.IMPORTANCE_LOW);active.setSound(null,null);nm.createNotificationChannel(active);NotificationChannel request=new NotificationChannel(CHANNEL_REQUEST,"Nuevas solicitudes de viaje",NotificationManager.IMPORTANCE_HIGH);request.enableVibration(true);request.setVibrationPattern(new long[]{0,700,250,700,250,700});Uri sound=RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);request.setSound(sound,null);nm.createNotificationChannel(request);}}
+  private void createChannels(){if(Build.VERSION.SDK_INT>=Build.VERSION_CODES.O){NotificationManager nm=getSystemService(NotificationManager.class);NotificationChannel active=new NotificationChannel(CHANNEL_ACTIVE,"Conductor conectado",NotificationManager.IMPORTANCE_LOW);active.setSound(null,null);nm.createNotificationChannel(active);NotificationChannel request=new NotificationChannel(CHANNEL_REQUEST,"Nuevas solicitudes con pantalla apagada",NotificationManager.IMPORTANCE_HIGH);request.enableVibration(true);request.setVibrationPattern(new long[]{0,900,250,900,250,900});request.enableLights(true);request.setLightColor(0xFFFFC72C);request.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);Uri sound=RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);request.setSound(sound,null);nm.createNotificationChannel(request);}}
 
   private void checkRequests(){try{String token=prefs().getString("access_token","");if(token.isEmpty())return;String path="/rest/v1/trips?select=id,payment_method&status=eq.solicitado&driver_id=is.null&order=requested_at.desc&limit=1";HttpURLConnection c=open(path,token,"GET");int code=c.getResponseCode();if(code==401&&refreshToken()){token=prefs().getString("access_token","");c=open(path,token,"GET");code=c.getResponseCode();}if(code<200||code>=300)return;JSONArray rows=new JSONArray(read(c));if(rows.length()==0){lastTripId="";return;}JSONObject trip=rows.getJSONObject(0);String id=trip.optString("id","");String payment=trip.optString("payment_method","efectivo");if(!id.isEmpty()&&!id.equals(lastTripId)){lastTripId=id;showRequestAlert(payment);}}catch(Exception ignored){}}
 
@@ -62,8 +74,8 @@ public class DriverAlertService extends Service {
 
   private String read(HttpURLConnection c)throws Exception{BufferedReader br=new BufferedReader(new InputStreamReader(c.getInputStream(),StandardCharsets.UTF_8));StringBuilder b=new StringBuilder();String line;while((line=br.readLine())!=null)b.append(line);br.close();return b.toString();}
 
-  private void showRequestAlert(String payment){Intent open=new Intent(this,MainActivity.class);open.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_SINGLE_TOP);PendingIntent pi=PendingIntent.getActivity(this,2,open,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);boolean yape="yape".equalsIgnoreCase(payment);String method=yape?"PAGO CON YAPE":"PAGO EN EFECTIVO";Notification.Builder b=Build.VERSION.SDK_INT>=26?new Notification.Builder(this,CHANNEL_REQUEST):new Notification.Builder(this);Notification n=b.setSmallIcon(android.R.drawable.ic_dialog_map).setContentTitle("Nueva solicitud - "+method).setContentText("El pasajero informó: "+method+". Abre Nova Taxi para aceptar.").setStyle(new Notification.BigTextStyle().bigText("Nueva solicitud de viaje. El pasajero informó que pagará "+(yape?"con Yape.":"en efectivo.")+" Abre Nova Taxi Conductor para ver el servicio.")).setAutoCancel(true).setContentIntent(pi).setPriority(Notification.PRIORITY_MAX).build();getSystemService(NotificationManager.class).notify(4102,n);try{Uri uri=RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);Ringtone tone=RingtoneManager.getRingtone(this,uri);tone.play();handler.postDelayed(tone::stop,5000);}catch(Exception ignored){}try{Vibrator v=(Vibrator)getSystemService(VIBRATOR_SERVICE);if(Build.VERSION.SDK_INT>=26)v.vibrate(VibrationEffect.createWaveform(new long[]{0,700,250,700,250,700},-1));else v.vibrate(new long[]{0,700,250,700,250,700},-1);}catch(Exception ignored){}}
+  private void showRequestAlert(String payment){Intent open=new Intent(this,MainActivity.class);open.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_SINGLE_TOP);PendingIntent pi=PendingIntent.getActivity(this,2,open,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);boolean yape="yape".equalsIgnoreCase(payment);String method=yape?"PAGO CON YAPE":"PAGO EN EFECTIVO";Notification.Builder b=Build.VERSION.SDK_INT>=26?new Notification.Builder(this,CHANNEL_REQUEST):new Notification.Builder(this);Notification n=b.setSmallIcon(android.R.drawable.ic_dialog_map).setContentTitle("Nueva solicitud - "+method).setContentText("El pasajero informó: "+method+". Abre Nova Taxi para aceptar.").setStyle(new Notification.BigTextStyle().bigText("Nueva solicitud de viaje. El pasajero informó que pagará "+(yape?"con Yape.":"en efectivo.")+" Abre Nova Taxi Conductor para ver el servicio.")).setAutoCancel(true).setContentIntent(pi).setCategory(Notification.CATEGORY_ALARM).setVisibility(Notification.VISIBILITY_PUBLIC).setPriority(Notification.PRIORITY_MAX).build();getSystemService(NotificationManager.class).notify(4102,n);try{Uri uri=RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);Ringtone tone=RingtoneManager.getRingtone(this,uri);tone.play();handler.postDelayed(tone::stop,6500);}catch(Exception ignored){}try{Vibrator v=(Vibrator)getSystemService(VIBRATOR_SERVICE);if(Build.VERSION.SDK_INT>=26)v.vibrate(VibrationEffect.createWaveform(new long[]{0,900,250,900,250,900},-1));else v.vibrate(new long[]{0,900,250,900,250,900},-1);}catch(Exception ignored){}}
 
-  @Override public void onDestroy(){running=false;handler.removeCallbacks(poll);executor.shutdownNow();super.onDestroy();}
+  @Override public void onDestroy(){running=false;handler.removeCallbacks(poll);executor.shutdownNow();try{if(wakeLock!=null&&wakeLock.isHeld())wakeLock.release();}catch(Exception ignored){}super.onDestroy();}
   @Override public IBinder onBind(Intent intent){return null;}
 }

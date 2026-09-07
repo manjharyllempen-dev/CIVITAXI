@@ -151,6 +151,17 @@
     };
   }
 
+  function installDriverBatteryHelp(){
+    if(roleName()!=='Conductor')return;
+    const home=document.getElementById('home'),card=home&&home.querySelector('.card');
+    if(!card||document.getElementById('driverBatteryHelp'))return;
+    const button=document.createElement('button');
+    button.id='driverBatteryHelp';button.type='button';button.className='btn secondary';
+    button.textContent='PERMITIR ALERTAS CON PANTALLA APAGADA';
+    button.onclick=()=>{try{if(window.Android&&Android.openBatteryOptimizationSettings)Android.openBatteryOptimizationSettings()}catch(e){}};
+    card.appendChild(button);
+  }
+
   function installTripShare(){
     if(!/Nova Taxi (Usuario|Pasajero)/i.test(document.title))return;
     window.shareCurrentTrip=async function(){
@@ -177,6 +188,6 @@
     };
   }
 
-  function init(){installBranding();installPassengerRegistration();installDriverRegistration();installTripShare()}
+  function init(){installBranding();installPassengerRegistration();installDriverRegistration();installDriverBatteryHelp();installTripShare()}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();

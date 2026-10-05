@@ -2,7 +2,7 @@
 
 Aplicación Android/PWA para servicios de movilidad en Perú con tres APK independientes.
 
-Versión actual: **0.29.1** (`versionCode 38`).
+Versión actual: **0.29.2** (`versionCode 39`).
 
 ## APK
 

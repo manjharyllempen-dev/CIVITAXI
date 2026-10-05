@@ -133,6 +133,9 @@ function installPassengerManualRouteLogic(){
       if(distEl)distEl.textContent=route.km.toFixed(1)+' km';
       if(timeEl)timeEl.textContent=Math.round(route.min)+' min';
       if(fareEl)fareEl.textContent=money(fare);
+      const service=typeof selectedService==='function'?selectedService():null,serviceEl=document.getElementById('previewService');
+      if(!service)throw new Error('Selecciona un servicio antes de calcular la ruta.');
+      if(serviceEl)serviceEl.textContent=typeof serviceText==='function'?serviceText({service_icon:service&&service.icon,service_name:service&&service.name}):'🚕 Taxi';
       const paymentEl=document.getElementById('previewPayment');
       if(paymentEl)paymentEl.textContent=typeof paymentText==='function'?paymentText(chosenPayment):(chosenPayment==='yape'?'🟣 Pago informado: YAPE':'💵 Pago informado: EFECTIVO');
       if(typeof msg==='function')msg('homeMsg','');
@@ -198,6 +201,9 @@ function installPassengerAutomaticRouteLogic(){
       document.getElementById('previewDistance').textContent=route.km.toFixed(1)+' km';
       document.getElementById('previewTime').textContent=Math.round(route.min)+' min';
       document.getElementById('previewFare').textContent=money(fare);
+      const service=typeof selectedService==='function'?selectedService():null,serviceEl=document.getElementById('previewService');
+      if(!service)throw new Error('Selecciona un servicio antes de calcular la ruta.');
+      if(serviceEl)serviceEl.textContent=typeof serviceText==='function'?serviceText({service_icon:service&&service.icon,service_name:service&&service.name}):'🚕 Taxi';
       document.getElementById('previewPayment').textContent=typeof paymentText==='function'?paymentText(chosenPayment):(chosenPayment==='yape'?'🟣 Pago informado: YAPE':'💵 Pago informado: EFECTIVO');
       if(typeof msg==='function')msg('homeMsg','');
       go('preview');setTimeout(()=>CiviMap.route('mapPreview',o,d,o.name,d.name),100);

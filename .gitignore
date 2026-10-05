@@ -1,0 +1,10 @@
+# Credenciales y configuración local
+.env
+.env.local
+.env.*.local
+supabase/.temp/
+.gradle/
+**/build/
+dist/
+.runtime/
+library_downloads/

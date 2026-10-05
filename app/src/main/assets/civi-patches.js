@@ -100,6 +100,10 @@
   function installDriverRegistration(){
     if(!/Nova Taxi Chofer/i.test(document.title))return;
     window.uploadDriverMedia=uploadDriverMediaFixed;
+    // El registro principal ya valida el servicio (Auto, Mototaxi, Bicicleta,
+    // Flete u otro) y guarda service_type_id. Conservamos aquí solamente la
+    // carga robusta de fotos/documentos para no reemplazar esa lógica.
+    return;
     window.driverRegister=async function(){
       const full=String($('name')?.value||'').trim();
       const ph=String($('driverPhone')?.value||'').trim();
@@ -157,7 +161,7 @@
     if(!card||document.getElementById('driverBatteryHelp'))return;
     const button=document.createElement('button');
     button.id='driverBatteryHelp';button.type='button';button.className='btn secondary';
-    button.textContent='PERMITIR ALERTAS CON PANTALLA APAGADA';
+    button.textContent='ACTIVAR SONIDO CON PANTALLA APAGADA';
     button.onclick=()=>{try{if(window.Android&&Android.openBatteryOptimizationSettings)Android.openBatteryOptimizationSettings()}catch(e){}};
     card.appendChild(button);
   }

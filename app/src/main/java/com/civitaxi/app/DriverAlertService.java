@@ -32,7 +32,10 @@ import java.util.concurrent.Executors;
 
 public class DriverAlertService extends Service {
   private static final String CHANNEL_ACTIVE="nova_driver_active";
-  private static final String CHANNEL_REQUEST="nova_driver_request_v2";
+  // Cambiar el ID crea un canal limpio. Android conserva para siempre la
+  // configuracion de sonido del canal anterior, incluso despues de actualizar
+  // la APK; v3 vuelve a habilitar alarma y vibracion en instalaciones previas.
+  private static final String CHANNEL_REQUEST="nova_driver_request_v3";
   private static final String API="https://rhdcbxvohnrwfogiwcte.supabase.co";
   private static final String KEY="sb_publishable_ZYYjeiNtr-pcOe5rrCUCgg_zMAgnUko";
   private final Handler handler=new Handler(Looper.getMainLooper());

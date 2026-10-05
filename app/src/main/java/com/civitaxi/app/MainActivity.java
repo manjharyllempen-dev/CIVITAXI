@@ -44,6 +44,7 @@ public class MainActivity extends FragmentActivity {
   private static final String TRIP_CHANNEL_ID = "novataxi_trip_status";
   private WebView web;
   private ValueCallback<Uri[]> filePathCallback;
+  private boolean pendingLocationRequest;
 
   @Override public void onCreate(Bundle b) {
     super.onCreate(b);
@@ -193,10 +194,11 @@ public class MainActivity extends FragmentActivity {
   private void requestNativeLocation() {
     runOnUiThread(() -> {
       if (!hasLocationPermission()) {
+        pendingLocationRequest = true;
         requestLocationPermissionIfNeeded();
-        nativeLocationResult(false, null, "Autoriza la ubicación de Nova Taxi y vuelve a intentarlo.");
         return;
       }
+      pendingLocationRequest = false;
       LocationManager lm = (LocationManager) getSystemService(LOCATION_SERVICE);
       Location cached = bestLastLocation();
       if (cached != null) nativeLocationResult(true, cached, "Ubicación obtenida");
@@ -222,6 +224,16 @@ public class MainActivity extends FragmentActivity {
         if (cached == null) nativeLocationResult(false, null, "No se pudo obtener la ubicación.");
       }
     });
+  }
+
+  @Override public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+    super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+    if (requestCode != LOCATION_REQUEST || !pendingLocationRequest) return;
+    if (hasLocationPermission()) requestNativeLocation();
+    else {
+      pendingLocationRequest = false;
+      nativeLocationResult(false, null, "Autoriza la ubicación de Nova Taxi para usar tu posición actual.");
+    }
   }
 
   private void biometricResult(boolean ok, String message) {

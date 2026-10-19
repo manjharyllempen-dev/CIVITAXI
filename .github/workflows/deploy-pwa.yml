@@ -1,0 +1,126 @@
+name: Publicar Nova Taxi PWA v0.30.0
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@v4
+
+      - name: Preparar PWA Pasajero y Conductor v0.30.0
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist/pasajero dist/conductor
+          cp -R app/src/usuario/assets/. dist/pasajero/
+          cp -R app/src/chofer/assets/. dist/conductor/
+          for target in pasajero conductor; do
+            cp app/src/main/assets/api.js "dist/$target/api.js"
+            cp app/src/main/assets/maps.js "dist/$target/maps.js"
+            cp app/src/main/assets/styles.css "dist/$target/styles.css"
+            cat > "dist/$target/manifest.webmanifest" <<'MANIFEST'
+          {
+            "id": "./",
+            "name": "Nova Taxi",
+            "short_name": "Nova Taxi",
+            "description": "Solicita y gestiona viajes de Nova Taxi en Perú.",
+            "lang": "es-PE",
+            "start_url": "./index.html",
+            "scope": "./",
+            "display": "standalone",
+            "orientation": "any",
+            "background_color": "#0b0612",
+            "theme_color": "#ffc72c",
+            "icons": [
+              {"src":"./icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}
+            ]
+          }
+          MANIFEST
+            cat > "dist/$target/icon.svg" <<'ICON'
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+            <rect width="512" height="512" rx="96" fill="#0b0612"/>
+            <path d="M105 285l27-82c7-22 25-36 49-36h150c24 0 42 14 49 36l27 82v90c0 16-13 29-29 29h-14c-16 0-29-13-29-29v-13H177v13c0 16-13 29-29 29h-14c-16 0-29-13-29-29z" fill="#ffc72c"/>
+            <path d="M163 207h186l20 62H143z" fill="#7b00ff"/>
+            <circle cx="165" cy="320" r="23" fill="#0b0612"/><circle cx="347" cy="320" r="23" fill="#0b0612"/>
+            <text x="256" y="145" font-family="Arial,sans-serif" font-size="42" font-weight="700" text-anchor="middle" fill="#ffc72c">NOVA TAXI</text>
+          </svg>
+          ICON
+            python3 - "$target" <<'PY'
+          from pathlib import Path
+          import sys
+          target = Path("dist") / sys.argv[1]
+          index = target / "index.html"
+          html = index.read_text(encoding="utf-8")
+          if 'rel="manifest"' not in html:
+              html = html.replace("</head>", '<link rel="manifest" href="./manifest.webmanifest"><meta name="theme-color" content="#ffc72c"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"></head>')
+          registration = '<script>if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js").catch(e=>console.warn("PWA offline cache:",e)));}</script>'
+          if "service-worker.js" not in html:
+              html = html.replace("</body>", registration + "</body>")
+          index.write_text(html, encoding="utf-8")
+          PY
+            cat > "dist/$target/service-worker.js" <<'SW'
+          const CACHE_NAME = "nova-taxi-pwa-v30";
+          const SHELL = ["./", "./index.html", "./styles.css", "./api.js", "./app.js", "./maps.js", "./manifest.webmanifest", "./icon.svg"];
+          self.addEventListener("install", event => {
+            event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(SHELL)).then(() => self.skipWaiting()));
+          });
+          self.addEventListener("activate", event => {
+            event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key.startsWith("nova-taxi-pwa-") && key !== CACHE_NAME).map(key => caches.delete(key)))).then(() => self.clients.claim()));
+          });
+          self.addEventListener("fetch", event => {
+            const request = event.request;
+            const url = new URL(request.url);
+            if (request.method !== "GET" || url.origin !== self.location.origin) return;
+            if (request.mode === "navigate") {
+              event.respondWith(fetch(request).then(response => {
+                if (response.ok) caches.open(CACHE_NAME).then(cache => cache.put("./index.html", response.clone()));
+                return response;
+              }).catch(() => caches.match("./index.html")));
+            } else {
+              event.respondWith(caches.match(request).then(cached => cached || fetch(request)));
+            }
+          });
+          SW
+          done
+
+      - name: Verificar archivos web esenciales
+        run: |
+          test -s dist/pasajero/index.html
+          test -s dist/pasajero/app.js
+          test -s dist/conductor/index.html
+          test -s dist/conductor/app.js
+          test -s dist/pasajero/manifest.webmanifest
+          test -s dist/conductor/manifest.webmanifest
+
+      - name: Configurar GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Subir sitio
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Publicar sitio
+        id: deployment
+        uses: actions/deploy-pages@v4
